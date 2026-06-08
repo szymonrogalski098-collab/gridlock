@@ -21,4 +21,4 @@ Open `cube_master.html` in a browser. No build step or server required.
 
 ## Version
 
-v1.9.1
+v1.9.3

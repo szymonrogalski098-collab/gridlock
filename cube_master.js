@@ -925,7 +925,6 @@ const deathStats   = document.getElementById('death-stats');
 let cells = [], cube = {x:8,y:8}, round = 0, dashesLeft = 2;
 let sessionCoinsEarned = 0;  // coins earned this game
 let hardMode = false;
-let _prevHudCoins = -1, _prevHudRound = -1, _prevCombo = 0; // [1.9.3]
 
 // ── TESTER MODE ──
 // PIN verified via SHA-256 (Web Crypto API) — PIN never stored in code
@@ -1240,27 +1239,11 @@ function render() {
   startAnim(); // starts animLoop which draws cube + lasers
 
   hudCoins.textContent = `🪙 ${coins}`;
-  if (coins !== _prevHudCoins) { // [1.9.3]
-    _prevHudCoins = coins;
-    hudCoins.classList.remove('hud-bump'); void hudCoins.offsetWidth;
-    hudCoins.classList.add('hud-bump');
-  }
   hudInfo.textContent  = `${testerActive ? '⚙ TEST · ' : ''}Round ${round} · ${aliveTime()}s`; // [1.9]
-  if (round !== _prevHudRound) { // [1.9.3]
-    _prevHudRound = round;
-    hudInfo.classList.remove('hud-bump'); void hudInfo.offsetWidth;
-    hudInfo.classList.add('hud-bump');
-  }
   hudDash.textContent  = `⚡ ${testerActive && tDashInf ? '∞' : dashesLeft}`;
   // [1.9.2] Combo indicator — only visible when combo >= 5
-  if (comboCount >= 5) {
-    hudCombo.textContent = `🔥 x${comboCount}`; hudCombo.style.display = '';
-    if (comboCount !== _prevCombo) { // [1.9.3]
-      _prevCombo = comboCount;
-      hudCombo.classList.remove('combo-pop'); void hudCombo.offsetWidth;
-      hudCombo.classList.add('combo-pop');
-    }
-  } else { hudCombo.style.display = 'none'; _prevCombo = 0; } // [1.9.3]
+  if (comboCount >= 5) { hudCombo.textContent = `🔥 x${comboCount}`; hudCombo.style.display = ''; }
+  else { hudCombo.style.display = 'none'; }
 }
 
 // animation for animated skins
@@ -1269,18 +1252,6 @@ const ANIMATED_SKINS = new Set(['default','stripes','grid','rainbow','glitch','a
 function dist(x1,y1,x2,y2){return Math.abs(x1-x2)+Math.abs(y1-y2);}
 function aliveTime(){return alive?((Date.now()-startTime)/1e3).toFixed(1):lastTime;}
 function flash(t){msgEl.textContent=t;}
-function animateCounter(id, target, duration) { // [1.9.3]
-  const el = document.getElementById(id);
-  if (!el) return;
-  if (target === 0) { el.textContent = '0'; return; }
-  const start = Date.now();
-  (function tick() {
-    const p = Math.min((Date.now() - start) / duration, 1);
-    el.textContent = Math.round(p * target);
-    if (p < 1) requestAnimationFrame(tick);
-  })();
-}
-
 function showComboFlash(combo, bonus) { // [1.9.2]
   const el = document.getElementById('combo-flash');
   if (!el) return;
@@ -1449,24 +1420,6 @@ function spawnBlockImpact(x, y) {
   startAnim();
 }
 
-function spawnDashParticles(px, py) { // [1.9.3]
-  const cx = (px + 0.5) * cellSize, cy = (py + 0.5) * cellSize;
-  const col = (LASER_COLORS[laserColorId] || LASER_COLORS.red).fire;
-  const count = 8 + Math.floor(Math.random() * 5);
-  for (let i = 0; i < count; i++) {
-    const angle = Math.random() * Math.PI * 2;
-    const spd = 80 + Math.random() * 100;
-    particles.push({
-      x: cx, y: cy,
-      vx: Math.cos(angle) * spd, vy: Math.sin(angle) * spd,
-      color: col,
-      size: 3 + Math.random() * 4,
-      born: Date.now(), life: 260 + Math.random() * 80
-    });
-  }
-  startAnim();
-}
-
 // ══════════════════════════════════════════════════
 // DASH
 // ══════════════════════════════════════════════════
@@ -1485,7 +1438,6 @@ function tryDash(x,y) {
     cube.y=Math.max(0,Math.min(N-1,cube.y+Math.sign(dy)*sy));
   }
 
-  spawnDashParticles(prevX, prevY); // [1.9.3]
   spawnTrail(prevX, prevY, cube.x, cube.y);
   playSound('dash');
   dashesLeft--;
@@ -1642,14 +1594,11 @@ function die(reason) {
       `${reason==='block'?'🟪 Crushed by a block':'💀 Hit by a laser'}<br>`+
       `${hardMode?'<span style="color:#ff6600">🔥 Hard Mode</span><br>':''}`+
       `${bestComboThisSession >= 5 ? '🔥 Best combo: <b>x'+bestComboThisSession+'</b><br>' : ''}`+ // [1.9.2]
-      `<br>Time: <b>${lastTime}s</b> &nbsp;|&nbsp; Rounds: <b><span id="_dr">0</span></b><br>`+ // [1.9.3]
-      `<span style="color:#ffd700">🪙 Coins earned: <b>+<span id="_dc">0</span></b></span><br>`+ // [1.9.3]
+      `<br>Time: <b>${lastTime}s</b> &nbsp;|&nbsp; Rounds: <b>${round}</b><br>`+
+      `<span style="color:#ffd700">🪙 Coins earned: <b>+${sessionCoinsEarned}</b></span><br>`+
       `Best time: <b>${bestTime}s</b> &nbsp;|&nbsp; Best rounds: <b>${bestRound}</b>`+
-      (_newRecord ? `<br><span class="new-best">★ NEW BEST!</span>` : '')+ // [1.9.3]
       (newUnlock ? `<br><br><span style="color:#ffd700;font-size:15px">🏆 UNLOCKED: ${newUnlock.name}!</span>` : '');
     deathOverlay.classList.add('show');
-    animateCounter('_dr', round, 520);           // [1.9.3]
-    animateCounter('_dc', sessionCoinsEarned, 520); // [1.9.3]
   }, 400);
 }
 
@@ -1816,20 +1765,16 @@ function setFps(on) {
 // ── CENTRALIZED SCREEN MANAGEMENT ──
 // Instead of manually showing/hiding each screen — one function
 const SCREENS = ['screen-start','screen-stats','screen-pin','screen-tester','screen-missions','screen-tutorial','app'];
-function showScreen(id) { // [1.9.3] fade-in on target screen
+function showScreen(id) {
   SCREENS.forEach(s => {
     const el = s==='app' ? appEl : document.getElementById(s);
     if (!el) return;
     if (s === id) {
-      el.style.transition = 'opacity .15s ease';
       el.style.visibility = 'visible';
       el.style.pointerEvents = 'auto';
-      el.style.opacity = '0';
-      requestAnimationFrame(() => { el.style.opacity = '1'; });
     } else {
       el.style.visibility = 'hidden';
       el.style.pointerEvents = 'none';
-      el.style.opacity = '0';
     }
   });
 }
@@ -2125,7 +2070,6 @@ function buySkin(id){
   if (owned.includes(id)){skinId=id; invalidateSkinCache(); save(); playSkinSelect(); renderShop(); return;} // [1.9.2]
   if (coins<s.price){playError(); shopBal.textContent=`Not enough 🪙 (you have ${coins}, need ${s.price})`; return;} // [1.9.2]
   coins-=s.price; owned.push(id); skinId=id; invalidateSkinCache(); save(); playSkinSelect(); renderShop(); // [1.9.2]
-  shopBal.classList.remove('purchase-flash'); void shopBal.offsetWidth; shopBal.classList.add('purchase-flash'); // [1.9.3]
 }
 
 function buyBoardSkin(id) { // [1.9]
@@ -2142,7 +2086,6 @@ function buyBoardSkin(id) { // [1.9]
   boardsOwned.push(id); localStorage.setItem('cm_boards_owned', JSON.stringify(boardsOwned));
   boardSkinId = id; localStorage.setItem('cm_board', id);
   applyBoardSkin(); playSkinSelect(); renderShop(); // [1.9.2]
-  shopBal.classList.remove('purchase-flash'); void shopBal.offsetWidth; shopBal.classList.add('purchase-flash'); // [1.9.3]
 }
 
 function buyLaserColor(id) { // [1.9]
@@ -2159,7 +2102,6 @@ function buyLaserColor(id) { // [1.9]
   lasersOwned.push(id); localStorage.setItem('cm_lasers_owned', JSON.stringify(lasersOwned));
   laserColorId = id; localStorage.setItem('cm_laser', id);
   playSkinSelect(); renderShop(); // [1.9.2]
-  shopBal.classList.remove('purchase-flash'); void shopBal.offsetWidth; shopBal.classList.add('purchase-flash'); // [1.9.3]
 }
 
 function toggleNoGrid() { // [1.9.1]
