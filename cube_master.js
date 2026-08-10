@@ -50,49 +50,8 @@ const SKINS = [
   { id:'galaxy',    name:'Milky Way', cat:'Prestige', price:0, unlock:500, unlockDesc:'Survive 500 rounds'},
 ];
 
-// ══════════════════════════════════════════════════
-// DOM
-// ══════════════════════════════════════════════════
-const screenStart  = document.getElementById('screen-start');
-const appEl        = document.getElementById('app');
-const boardEl      = document.getElementById('board');
-const canvas       = document.getElementById('anim-canvas');
-const ctx          = canvas.getContext('2d');
-const hudCoins     = document.getElementById('hud-coins');
-const hudInfo      = document.getElementById('hud-info');
-const hudDash      = document.getElementById('hud-dash');
-const hudCombo     = document.getElementById('hud-combo'); // [1.9.2]
-const hudTimerEl   = document.getElementById('hud-timer');   // [1.10]
-const hudGridlock  = document.getElementById('hud-gridlock'); // [1.12]
-const hudBlackhole = document.getElementById('hud-blackhole'); // [2.0-s2]
-// [2.0-deemoji] value spans — the icon beside them is static SVG in index.html, so the HUD tick
-// only ever writes text and the markup is never re-parsed
-const hudDashVal      = document.getElementById('hud-dash-val');
-const hudComboVal     = document.getElementById('hud-combo-val');
-const hudTimerVal     = document.getElementById('hud-timer-val');
-const hudGridlockVal  = document.getElementById('hud-gridlock-val');
-const hudBlackholeVal = document.getElementById('hud-blackhole-val');
 
-const msgEl        = document.getElementById('msg');
-const shopBtn      = document.getElementById('shop-btn');
-const shopEl       = document.getElementById('shop');
-const shopBal      = document.getElementById('shop-bal');
-const shopGrid     = document.getElementById('shop-grid');
-const shopGridBL   = document.getElementById('shop-grid-bl'); // [1.9]
 let shopActiveTab  = 'cube'; // [1.9]
-const shopClose    = document.getElementById('shop-close');
-// [2.0-s5c] Void Shop elements
-const voidShopEl   = document.getElementById('void-shop');
-const voidBalEl    = document.getElementById('void-bal');
-const voidOpenerEl = document.getElementById('void-opener');
-const voidCollEl   = document.getElementById('void-collection');
-const voidRevealEl = document.getElementById('void-reveal');
-const voidReelStrip= document.getElementById('void-reel-strip');
-const voidReelVp   = document.getElementById('void-reel-viewport');
-const voidRevealCard = document.getElementById('void-reveal-card');
-const voidRevealOk = document.getElementById('void-reveal-ok');
-const deathOverlay = document.getElementById('death-overlay');
-const deathStats   = document.getElementById('death-stats');
 
 // ══════════════════════════════════════════════════
 // STATE
@@ -2924,12 +2883,10 @@ function die(reason) {
 // ══════════════════════════════════════════════════
 // START / RESTART
 // ══════════════════════════════════════════════════
-const screenStats = document.getElementById('screen-stats');
 
 // ══════════════════════════════════════════════════
 // TRYB TESTERA
 // ══════════════════════════════════════════════════
-const screenPin    = document.getElementById('screen-pin');
 let pinBuffer = '';
 
 function updatePinDisplay() {
@@ -3007,7 +2964,6 @@ function _tFeedback(id, msg) {
 // ══════════════════════════════════════════════════
 // MENU COINS COUNTER
 // ══════════════════════════════════════════════════
-const menuCoinsEl = document.getElementById('menu-coins');
 let displayedCoins = -1;
 
 function updateMenuCoins(animate=false){
@@ -3039,7 +2995,6 @@ document.querySelectorAll('.menu-btn,.pin-btn,.mission-claim-btn,.tester-toggle'
 });
 
 // ── FPS COUNTER ──
-const hudFpsEl = document.getElementById('hud-fps');
 function fpsLoop(ts) {
   fpsFrames++;
   if (ts - fpsLast >= 1000) {
@@ -4551,8 +4506,6 @@ function tUnlockAll() {
 // ══════════════════════════════════════════════════
 // [2.0-s4h] TUTORIAL — guided live run on the real engine (learn-by-doing)
 // ══════════════════════════════════════════════════
-const _tutCoachEl = document.getElementById('tut-coach');
-const _tutSkipEl  = document.getElementById('tut-skip');
 
 function _tutCoach(text) { // [2.0-s4h] one-line coachmark bubble
   if (_tutCoachEl) { _tutCoachEl.textContent = text; _tutCoachEl.style.display = 'block'; }
@@ -4765,7 +4718,6 @@ function _toggleFab() { // [1.10.2]
 document.getElementById('tester-fab-btn').addEventListener('click', _toggleFab);
 // [2.0-s4h] Tutorial — single corner skip button
 document.getElementById('tut-skip').addEventListener('click', ()=>{ playSound('click'); _tutSkip(); });
-const resetDialog = document.getElementById('reset-dialog');
 document.getElementById('reset-cancel').addEventListener('click', ()=>{
   resetDialog.style.visibility='hidden';
   resetDialog.style.pointerEvents='none';
