@@ -469,8 +469,9 @@ body.world2 #board-wrap.mod-flash #board { box-shadow:0 0 30px rgba(155,89,182,.
 .cell { background:var(--board-bg,#08081a); border:none; min-width:0; min-height:0; width:100%; height:100%; } /* [1.9] CSS var for board skin */
 .cube         { border-radius:3px; }
 .dashable     { background:#0e1428; }
-.block-charge  { background:#4422aa !important; border-radius:2px; opacity:.6; }
-.block         { background:#7755dd !important; border-radius:2px; }
+/* [2.0-w1fix] burnt orange, not purple — the telegraph was reading as a reward tile */
+.block-charge  { background:#6b3000 !important; border-radius:2px; opacity:.6; }
+.block         { background:#d2610a !important; border-radius:2px; }
 .laser-charge  { background:#992200 !important; }
 .laser-fire    { background:#ff3300 !important; box-shadow:inset 0 0 4px #ff6600; }
 .boss-shockwave { background:rgba(140,0,0,.65) !important; box-shadow:inset 0 0 6px #ff0000 !important; } /* [1.11] */
@@ -524,6 +525,11 @@ body.world2 #board-wrap.mod-flash #board { box-shadow:0 0 30px rgba(155,89,182,.
   50%      { text-shadow:0 0 20px #0ff, 0 0 44px #0ff; opacity:.75; } }
 .new-best { color:#0ff; font-weight:bold; letter-spacing:1px; /* [1.9.3] */
   animation:new-best-pulse 0.8s ease-in-out infinite; }
+@keyframes record-bonus-pulse { /* [2.0-w1fix] */
+  0%,100% { text-shadow:0 0 8px #ffd700, 0 0 18px #ff8800; opacity:1; }
+  50%      { text-shadow:0 0 22px #ffd700, 0 0 46px #ff8800; opacity:.78; } }
+.record-bonus { color:#ffd700; font-weight:bold; letter-spacing:1px; font-size:15px; /* [2.0-w1fix] */
+  animation:record-bonus-pulse 0.8s ease-in-out infinite; }
 @keyframes purchase-flash { /* [1.9.3] */
   0%   { color:#ffd700; text-shadow:0 0 12px #ffd700; }
   60%  { color:#0ff;    text-shadow:0 0 18px #0ff; }
@@ -544,6 +550,7 @@ body.world2 #board-wrap.mod-flash #board { box-shadow:0 0 30px rgba(155,89,182,.
 #shop-grid, #shop-grid-bl { display:grid; grid-template-columns:repeat(3,1fr); gap:10px;
   width:100%; max-width:440px; margin-top:14px; } /* [1.9] shared grid layout */
 .skin-card { background:rgba(15,15,34,.8); border:1.5px solid #1e1e3a; border-radius:12px;
+  position:relative; /* [2.0-w1fix] anchor for .shop-lock-overlay */
   padding:12px 6px 10px; display:flex; flex-direction:column; align-items:center;
   gap:6px; cursor:pointer; backdrop-filter:blur(4px);
   transition:transform .2s cubic-bezier(.34,1.56,.64,1), border-color .18s, box-shadow .18s; } /* [1.9.3] */
@@ -556,6 +563,33 @@ body.world2 #board-wrap.mod-flash #board { box-shadow:0 0 30px rgba(155,89,182,.
 .skin-name  { font-size:10px; color:#88aacc; text-align:center; }
 .skin-price { font-size:10px; color:#ffd700; font-weight:bold; }
 .skin-price.owned  { color:#0cf; }
+
+/* ── SHOP LOCK / UNLOCK [2.0-w1fix] ──
+   Ordinary unowned items keep their preview (greyed) under a thin lock; prestige items keep the
+   old solid 🔒 tile instead. No pointer-events:none here — the card must stay clickable so an
+   unaffordable buy can answer with .shake-deny. */
+.shop-locked .skin-preview { filter:grayscale(70%) brightness(.55); }
+.shop-lock-overlay { position:absolute; top:12px; left:50%; margin-left:-19px;
+  width:38px; height:38px; display:flex; align-items:center; justify-content:center;
+  pointer-events:none; }
+.shop-lock-overlay svg { width:17px; height:17px; display:block; overflow:visible;
+  fill:none; stroke:#9fc6e8; stroke-width:1.4; stroke-linecap:round; stroke-linejoin:round;
+  filter:drop-shadow(0 0 3px rgba(0,0,0,.9)); }
+@keyframes shop-unlock-drop {
+  0%   { transform:translateY(0)     rotate(0deg);  opacity:1; }
+  22%  { transform:translateY(-3px)  rotate(-9deg); opacity:1; }
+  100% { transform:translateY(28px)  rotate(18deg); opacity:0; } }
+.shop-unlock-anim svg { animation:shop-unlock-drop .38s cubic-bezier(.55,.06,.68,.19) forwards; }
+@keyframes shop-glow-reveal {
+  0%,100% { box-shadow:0 0 10px rgba(0,200,255,.35); }
+  50%     { box-shadow:0 0 24px rgba(0,255,255,.85), 0 0 44px rgba(0,200,255,.4); } }
+.shop-glow-reveal { animation:shop-glow-reveal .6s ease-in-out 4; } /* 4 × .6s ≈ the 2.5s JS cleanup */
+.shop-glow-reveal .skin-preview { filter:brightness(1.25); }
+@keyframes shake-deny {
+  0%,100% { transform:translateX(0); }
+  20% { transform:translateX(-4px); } 40% { transform:translateX(4px); }
+  60% { transform:translateX(-3px); } 80% { transform:translateX(3px); } }
+.shake-deny { animation:shake-deny .32s ease-in-out; border-color:#ff4444 !important; }
 #shop-close { margin-top:20px; background:linear-gradient(135deg,#0cf,#08f);
   color:#000; border:none; padding:11px 32px; font-family:inherit;
   font-size:14px; font-weight:bold; border-radius:12px; cursor:pointer;
@@ -729,7 +763,10 @@ body.world2 #tut-coach { border-color:rgba(204,136,255,.55); color:#d8a8ff;
   animation:card-in .25s ease both; }
 .mode-card:not(.blocked):hover { transform:scale(1.02); border-color:rgba(0,200,255,.5); box-shadow:0 0 16px rgba(0,200,255,.15); }
 .mode-card.blocked { opacity:.55; cursor:default; pointer-events:none; }
-.mode-card-icon { font-size:26px; margin-bottom:4px; }
+.mode-card-icon { font-size:26px; margin-bottom:4px; line-height:0; } /* [2.0-w1fix] line-height:0 — SVG sets its own box */
+.mode-card-icon svg { width:26px; height:26px; display:block; overflow:visible; /* [2.0-w1fix] emoji → line-art icons */
+  fill:none; stroke:#0cf; stroke-width:1.5; stroke-linecap:round; stroke-linejoin:round;
+  filter:drop-shadow(0 0 4px rgba(0,200,255,.55)); }
 .mode-card-name { font-size:16px; font-weight:bold; letter-spacing:2px; color:#0cf; }
 .mode-card-desc { font-size:12px; color:#6688aa; margin-top:3px; }
 .mode-card-status { font-size:12px; color:#ff6600; margin-top:6px; min-height:16px; letter-spacing:1px; }
@@ -858,6 +895,7 @@ body.world2 #screen-modes { background:radial-gradient(ellipse at top, #0d0020 0
 body.world2 #modes-header { color:#cc88ff; text-shadow:0 0 12px #9b59b6; }
 body.world2 .mode-card { background:rgba(20,8,40,.8); border-color:#2a1a4a; }
 body.world2 .mode-card:not(.blocked):hover { border-color:rgba(155,89,182,.6); box-shadow:0 0 16px rgba(155,89,182,.2); }
+body.world2 .mode-card-icon svg { stroke:#cc88ff; filter:drop-shadow(0 0 4px rgba(155,89,182,.6)); } /* [2.0-w1fix] */
 body.world2 .mode-card-name { color:#cc88ff; }
 body.world2 .mode-card-desc { color:#74589a; }
 body.world2 .mode-card-status { color:#ffd700; }

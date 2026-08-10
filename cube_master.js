@@ -1341,6 +1341,8 @@ let _phaseRemainingMs = 0;    // [1.10.2] stored on pause
 // FPS counter
 let fpsFrames = 0, fpsLast = 0, fpsCurrent = 0;
 let lasers = [], blocks = [], alive = true, startTime = 0, lastTime = 0;
+// [2.0-w1fix] "Lasers Dodged" counts beams the player actually dashed over this round, not every beam that spawned
+let roundLasersDodgedByDash = 0, _roundDodgedKeys = new Set();
 let _virtAccum = 0, _virtBase = 0; // [1.10.2-fix] virtual-time accumulator for scaled elapsed
 let phaseTimer = null, cellSize = 0;
 
@@ -1360,7 +1362,7 @@ const BOARD_SKINS = {
   deepspace:     { bg: '#01010a', grid: '#10153a', glow: false, stars: true  },
   asteroidbelt:  { bg: '#060410', grid: '#2a2535', glow: false, belt: true   }
 };
-const BOARD_SKIN_LIST = [ // [1.9]
+const BOARD_SKIN_LIST = [ // [1.9] World 1 boards — [2.0-w1fix] rendered + purchasable again
   { id:'classic',       name:'Classic',       price:0   },
   { id:'void',          name:'Void',          price:300 },
   { id:'neon_grid',     name:'Neon Grid',     price:500 },
@@ -1457,11 +1459,11 @@ if (!VALID_IDS.has(skinId)) skinId = 'default';
 let bestTime  = parseFloat(localStorage.getItem('cm_best')  || '0');
 let bestRound = parseInt(localStorage.getItem('cm_bestR')   || '0');
 let gamesPlayed = parseInt(localStorage.getItem('cm_games') || '0');
-let boardSkinId  = localStorage.getItem('cm_board') || 'classic'; // [1.9] legacy, no longer rendered (board skins are Void-only)
+let boardSkinId  = localStorage.getItem('cm_board') || 'classic'; // [1.9] World 1 board slot — [2.0-w1fix] live again
 let boardSkinIdW2 = localStorage.getItem('cm_board_w2') || 'eventhorizon'; // [2.0-s5a-r9] Void-only slot
 let laserColorId = localStorage.getItem('cm_laser') || 'red'; // [1.9]
 let laserColorIdW2 = localStorage.getItem('cm_laser_w2') || 'plasma'; // [2.0-s5a-r8] Void-only slot
-let boardsOwned  = JSON.parse(localStorage.getItem('cm_boards_owned') || '["classic"]'); // [1.9] legacy, unused for render
+let boardsOwned  = JSON.parse(localStorage.getItem('cm_boards_owned') || '["classic"]'); // [1.9] World 1 board ownership — [2.0-w1fix] live again
 let lasersOwned  = JSON.parse(localStorage.getItem('cm_lasers_owned') || '["red"]'); // [1.9]
 let showBoardGrid = localStorage.getItem('cm_nogrid') !== '1'; // [1.9.1] bug #8: true = grid visible
 
@@ -1628,6 +1630,7 @@ function _dateSeed() { // [1.10]
 
 let _testerSnap = null; // [1.9.2] Bug #3: tester snapshot
 function _saveTesterSnap() { // [1.9.2]
+  if (_testerSnap) return; // [2.0-w1fix] baseline is taken once, when tester mode is enabled — never overwrite it
   const KEYS=['cm_coins','cm_owned','cm_skin','cm_best','cm_bestR','cm_games',
     'cm_board','cm_laser','cm_boards_owned','cm_lasers_owned','cm_nogrid',
     'cm_stat_lasers','cm_stat_time','cm_stat_coins_total','cm_stat_best_combo',
@@ -1675,21 +1678,46 @@ function _restoreTesterSnap() { // [1.9.2]
   _testerSnap=null;
 }
 
-// [2.0-s5a-r9] Apply board skin background — Void-only; World 1 always plain (boardSkinId unused for render)
+// [2.0-w1fix] resolve the equipped board skin for the world we're in (was: W1 hardcoded to classic)
+function _curBoardSkin() {
+  return currentWorld === 2
+    ? (BOARD_SKINS[boardSkinIdW2] || BOARD_SKINS.eventhorizon)
+    : (BOARD_SKINS[boardSkinId]   || BOARD_SKINS.classic);
+}
+
+// [1.9] Apply board skin background — [2.0-w1fix] World 1 board skins are live again
 function applyBoardSkin() {
-  const skin = currentWorld === 2 ? (BOARD_SKINS[boardSkinIdW2] || BOARD_SKINS.eventhorizon) : BOARD_SKINS.classic;
+  const skin = _curBoardSkin();
   boardEl.style.background = skin.bg;
   boardEl.style.setProperty('--board-bg', skin.bg);
 }
 
-// [1.9] Draw grid lines on a canvas (used in animLoop) [2.0-s4h][2.0-s5a][2.0-s5a-r9] Void-only, seamless void otherwise
+// [1.9] Draw grid lines on a canvas (used in animLoop) [2.0-s4h][2.0-s5a][2.0-w1fix] both worlds
 function drawBoardGridLines(ctx2, canvasSize, n) {
-  if (currentWorld !== 2 || !showBoardGrid) return; // [1.9.1] bug #8: no-grid toggle; W1 has no board skin effects
-  const skin = BOARD_SKINS[boardSkinIdW2] || BOARD_SKINS.eventhorizon;
+  if (!showBoardGrid) return; // [1.9.1] bug #8: no-grid toggle
+  const skin = _curBoardSkin();
   if (skin.warped) _drawWarpedCore(ctx2, canvasSize); // seamless void — no grid lines, eventhorizon shows its core only
+  // [2.0-w1fix] W1 skins carry no overlay flags, so they draw plain grid lines in their own colour
+  else if (!skin.stars && !skin.nebula && !skin.belt) _drawPlainGridLines(ctx2, canvasSize, n, skin);
   if (skin.stars)       _drawStarsOverlay(ctx2, canvasSize);
   else if (skin.nebula) _drawNebulaOverlay(ctx2, canvasSize);
   else if (skin.belt)   _drawBeltOverlay(ctx2, canvasSize);
+}
+
+// [2.0-w1fix] plain n×n grid in the skin's colour — what makes Neon Grid / Lava / Ice / Galaxy read as different boards
+function _drawPlainGridLines(ctx2, canvasSize, n, skin) {
+  const step = canvasSize / n;
+  ctx2.save();
+  ctx2.strokeStyle = skin.grid;
+  ctx2.lineWidth = 1;
+  ctx2.globalAlpha = skin.glow ? 0.55 : 0.35;
+  if (skin.glow) { ctx2.shadowColor = skin.grid; ctx2.shadowBlur = skin.prestige ? 6 : 4; }
+  for (let i = 1; i < n; i++) {
+    const p = Math.round(i * step) + 0.5;
+    ctx2.beginPath(); ctx2.moveTo(p, 0); ctx2.lineTo(p, canvasSize); ctx2.stroke();
+    ctx2.beginPath(); ctx2.moveTo(0, p); ctx2.lineTo(canvasSize, p); ctx2.stroke();
+  }
+  ctx2.restore();
 }
 
 // [2.0-s5a] central black/gold singularity — Event Horizon's board-skin effect in W2
@@ -2236,7 +2264,7 @@ function spawnBlockImpact(x, y) {
     particles.push({
       x:cx, y:cy,
       vx:Math.cos(angle)*spd, vy:Math.sin(angle)*spd,
-      color:'#aa77ff', size:3+Math.random()*4,
+      color:'#ffa040', size:3+Math.random()*4, // [2.0-w1fix] match the burnt-orange block
       born:Date.now(), life:300+Math.random()*200
     });
   }
@@ -2541,7 +2569,12 @@ function tryDash(x,y) {
     if (onRow || onCol) { playSound('near_miss'); break; }
   }
 
+  // [2.0-w1fix] a real dodge: the dash flew over a beam that was firing, and the player came out alive
+  const _crossed = _lasersCrossedByDash(prevX, prevY, cube.x, cube.y);
   checkDeathByLaser();
+  if (alive) for (const k of _crossed) {
+    if (!_roundDodgedKeys.has(k)) { _roundDodgedKeys.add(k); roundLasersDodgedByDash++; }
+  }
   if (w2Boss) _w2OnPlayerMoved(); // [2.0-s4b] plate-step + crater death after the move
   if (tutorialActive) _tutOnDash(); // [2.0-s4h] advance the scripted tutorial on the player's dash
   render();
@@ -3785,6 +3818,7 @@ function startRound() {
   if (bossActive) return; // [1.11] stale timer guard — never spawn lasers during active boss
   _freezeVirtTime(); _appliedSpeedMult = tSpeedMult; // [1.10.2-fix] commit multiplier at round boundary
   clearTimeout(phaseTimer); round++; dashesLeft=2;
+  roundLasersDodgedByDash = 0; _roundDodgedKeys.clear(); // [2.0-w1fix]
   _tickRoundMod(); // [2.0-s3.1] tick modifier duration + reset/re-apply per-round factors
   if (blackHoleCooldown > 0) blackHoleCooldown--; // [2.0-s2] BH cooldown ticks per round
   if (_asteroidsEnabled() && !asteroidTimer && !bossRound) scheduleAsteroid(); // [2.0-s2][2.0-s3.1] re-arm after boss
@@ -3836,7 +3870,6 @@ function startRound() {
       if (!alive || bossActive) return; // [1.11] stale timer guard; was: if (!alive) return
       const _baseEarned = testerActive ? 999 : (hardMode ? 3 : 1);
       const earned = Math.round(_baseEarned * (gridlockActive ? 2 : 1) * roundCoinMult); // [1.12][2.0-s3] gridlock ×2 + round modifier mult
-      const roundLaserCount = lasers.length; // [1.9.2] capture before clear
       if (currentWorld === 2) { crystals += earned; if (!testerActive) sessionCrystalsEarned += earned; } // [2.0-s1]
       else { coins += earned; if (!testerActive) sessionCoinsEarned += earned; }
       save(); lasers=[]; blocks=[];
@@ -3847,7 +3880,7 @@ function startRound() {
         mTrackLaserDodged();
       }
       // [1.9.2] Extended stats — [2.0-s3] routed per world
-      addStatLasers(roundLaserCount);
+      addStatLasers(roundLasersDodgedByDash); // [2.0-w1fix] beams actually dashed over, not every beam that spawned
       addCurrencyTotal(earned); // W1 → cm_stat_coins_total, W2 → cm_world2_stat_crystals_total
       // [1.9.2] Combo
       comboCount += comboStep; // [2.0-s3] combo_boost modifier raises step
@@ -3926,6 +3959,20 @@ function drawSolarFlares(now) { // [2.0-s5a-r8] flat flares, colored by laserCol
   }
 }
 
+// [2.0-w1fix] Which firing beams did this dash pass over? A dash is a teleport, so "crossed" means the
+// beam's row/column sits strictly between the start and end cell — strict, so starting on or landing on
+// a beam never counts (landing on one is death anyway). Returns stable keys for per-round dedupe.
+function _lasersCrossedByDash(x0, y0, x1, y1) {
+  const out = [];
+  for (const L of lasers) {
+    if (L.state !== 'fire') continue;
+    const a = L.type === 'row' ? y0 : x0, b = L.type === 'row' ? y1 : x1;
+    const lo = Math.min(a, b), hi = Math.max(a, b);
+    for (const i of laserIdxs(L)) if (i > lo && i < hi) { out.push(`${L.type}:${L.idx}`); break; } // 2-wide W2 flare counts once
+  }
+  return out;
+}
+
 function checkDeathByLaser() {
   if (bossActive) return; // [1.11] stale timer guard
   if ((testerActive && tNoclip) || tutorialActive) return; // [2.0-s4h]
@@ -3952,6 +3999,18 @@ function _resetTesterSettings() { // [1.10.2]
   if (testerActive) renderFabMenu();
 }
 
+// [2.0-w1fix] New record ⇒ +200% of what the run earned, so the player walks away with 3× the payout.
+// Folded back into sessionCoinsEarned/sessionCrystalsEarned so the death-overlay counter shows the full total.
+function _awardRecordBonus() {
+  const base  = currentWorld === 2 ? sessionCrystalsEarned : sessionCoinsEarned;
+  const bonus = base * 2;
+  if (bonus <= 0) return 0;
+  if (currentWorld === 2) { crystals += bonus; sessionCrystalsEarned += bonus; }
+  else                    { coins    += bonus; sessionCoinsEarned    += bonus; }
+  addCurrencyTotal(bonus); // keep the lifetime stat consistent with the wallet
+  return bonus;
+}
+
 function _timeAttackOver() { // [1.10]
   if (!alive) return;
   alive = false; lastTime = (_virtMs() / 1000).toFixed(1); // [1.10.2-fix]
@@ -3961,6 +4020,7 @@ function _timeAttackOver() { // [1.10]
   const _newRecord = round > bestTimeAttack;
   if (_newRecord) { bestTimeAttack = round; localStorage.setItem('cm_best_timeattack', bestTimeAttack); }
   if (_newRecord) playRecord();
+  const _recBonus = (_newRecord && !testerActive) ? _awardRecordBonus() : 0; // [2.0-w1fix]
   if (currentWorld === 2) w2Games++; else gamesPlayed++; // [2.0-s3] per world
   save();
   const titleEl = document.getElementById('death-title');
@@ -3971,7 +4031,8 @@ function _timeAttackOver() { // [1.10]
       `${bestComboThisSession >= 5 ? '🔥 Best combo: <b>x'+bestComboThisSession+'</b><br>' : ''}`+
       `<br>Rounds: <b><span id="_dr">0</span></b> &nbsp;|&nbsp; `+
       `<span style="color:#ffd700">🪙 +<span id="_dc">0</span></span><br>`+
-      `Best (Time Attack): <b>${bestTimeAttack} rounds</b>`;
+      `Best (Time Attack): <b>${bestTimeAttack} rounds</b>`+
+      (_recBonus > 0 ? `<br><span class="record-bonus">🏆 NEW RECORD — 3× BONUS +${_recBonus} ${curIcon()}</span>` : ''); // [2.0-w1fix]
     deathOverlay.classList.add('show');
     animateCounter('_dr', round, 520);
     animateCounter('_dc', sessionCoinsEarned, 520);
@@ -3992,17 +4053,21 @@ function die(reason) {
   playSound('die');
   spawnDeath(cube.x, cube.y);
   cubeDrawPending = null; // hide cube from canvas
-  // [1.10] Mode-specific record + lock
+  // [1.10] Mode-specific record + lock — [2.0-w1fix] _modeRecord captured before the best is overwritten
+  let _modeRecord = false;
   if (gameMode === 'hardcore') {
     localStorage.setItem('cm_hardcore_date', _todayStr());
-    if (round > bestHardcore) { bestHardcore = round; localStorage.setItem('cm_best_hardcore', bestHardcore); }
+    _modeRecord = round > bestHardcore;
+    if (_modeRecord) { bestHardcore = round; localStorage.setItem('cm_best_hardcore', bestHardcore); }
   }
   if (gameMode === 'daily') {
     localStorage.setItem('cm_daily_score', round);
-    if (round > bestDaily) { bestDaily = round; localStorage.setItem('cm_best_daily', bestDaily); }
+    _modeRecord = round > bestDaily;
+    if (_modeRecord) { bestDaily = round; localStorage.setItem('cm_best_daily', bestDaily); }
   }
   if (gameMode === 'timeattack') {
-    if (round > bestTimeAttack) { bestTimeAttack = round; localStorage.setItem('cm_best_timeattack', bestTimeAttack); }
+    _modeRecord = round > bestTimeAttack;
+    if (_modeRecord) { bestTimeAttack = round; localStorage.setItem('cm_best_timeattack', bestTimeAttack); }
   }
 
   const _lastT = parseFloat(lastTime);
@@ -4027,18 +4092,29 @@ function die(reason) {
     for (const s of SKINS.filter(s=>s.unlock)) {
       if (round >= s.unlock && !owned.includes(s.id)) { owned.push(s.id); newUnlock = s; }
     }
+    // [2.0-w1fix] same for prestige board skins (Prestige Gold) — previously unobtainable
+    for (const b of BOARD_SKIN_LIST.filter(b=>b.unlock)) {
+      if (round >= b.unlock && !boardsOwned.includes(b.id)) {
+        boardsOwned.push(b.id);
+        localStorage.setItem('cm_boards_owned', JSON.stringify(boardsOwned));
+        newUnlock = b;
+      }
+    }
   }
+  // [2.0-w1fix] +200% payout on any record this run beat — per-world round best, or the mode's own best
+  const _recBonus = (!testerActive && (_newRecord || _modeRecord)) ? _awardRecordBonus() : 0;
   save();
 
   setTimeout(()=>{
     deathStats.innerHTML = // [1.9.2]
-      `${reason==='block'?'🟪 Crushed by a block':reason==='asteroid'?'☄️ Smashed by an asteroid':currentWorld===2?'☀️ Burned by a Solar Flare':'💀 Hit by a laser'}<br>`+
+      `${reason==='block'?'🟧 Crushed by a block':reason==='asteroid'?'☄️ Smashed by an asteroid':currentWorld===2?'☀️ Burned by a Solar Flare':'💀 Hit by a laser'}<br>`+
       `${hardMode?'<span style="color:#ff6600">🔥 Hard Mode</span><br>':''}`+
       `${bestComboThisSession >= 5 ? '🔥 Best combo: <b>x'+bestComboThisSession+'</b><br>' : ''}`+ // [1.9.2]
       `<br>Time: <b>${lastTime}s</b> &nbsp;|&nbsp; Rounds: <b><span id="_dr">0</span></b><br>`+ // [1.9.3]
       `<span style="color:#ffd700">${curIcon()} ${currentWorld===2?'Crystals':'Coins'} earned: <b>+<span id="_dc">0</span></b></span><br>`+ // [1.9.3][2.0-s1]
       `Best time: <b>${currentWorld===2?w2BestTime:bestTime}s</b> &nbsp;|&nbsp; Best rounds: <b>${currentWorld===2?w2BestRound:bestRound}</b>`+ // [2.0-s3] per world
       (_newRecord ? `<br><span class="new-best">★ NEW BEST!</span>` : '')+ // [1.9.3]
+      (_recBonus > 0 ? `<br><span class="record-bonus">🏆 NEW RECORD — 3× BONUS +${_recBonus} ${curIcon()}</span>` : '')+ // [2.0-w1fix]
       (gameMode==='timeattack' ? `<br>Best (Time Attack): <b>${bestTimeAttack} rounds</b>` : '')+ // [1.10]
       (gameMode==='hardcore'   ? `<br>Best (Hardcore): <b>${bestHardcore} rounds</b>` : '')+      // [1.10]
       (gameMode==='daily'      ? `<br>Best (Daily): <b>${bestDaily} rounds</b>` : '')+            // [1.10]
@@ -4280,7 +4356,7 @@ function showMenu() {
   customGame = false; // [2.0-s3.1] leave the sandbox on returning to menu
   tutorialActive = false; // [2.0-s4h] defensive: never linger into the menu
   asteroids = []; clearTimeout(asteroidTimer); asteroidTimer = null; _resetBlackHole(); // [2.0-s2]
-  _restoreTesterSnap(); // [1.10.1] undo tester's 999-coin rounds if snap exists
+  // [2.0-w1fix] no snapshot restore here — tester progress survives every trip to the menu; only exitTesterMode() rolls back
   // refresh bottom bar
   const barTester = document.getElementById('bar-tester');
   if (barTester) barTester.classList.toggle('active', testerUnlocked);
@@ -4348,8 +4424,21 @@ function showPin() {
 }
 
 function enableTesterMode() { // [1.10.1]
+  _saveTesterSnap(); // [2.0-w1fix] baseline taken on entry, not on every startGame() — tester progress now persists until EXIT
   testerActive = true; // [1.10.2-fix] in-memory only, no localStorage
   showFab();
+}
+// [2.0-w1fix] the only place that rolls the tester's changes back — leaving to the menu no longer does
+function exitTesterMode() {
+  _restoreTesterSnap();
+  testerActive = false;
+  testerUnlocked = false;
+  _fabOpen = false;
+  fabPaused = false;
+  document.getElementById('tester-fab-menu')?.classList.add('fab-hidden');
+  hideFab();
+  applyBoardSkin(); // the restore rewrote boardSkinId / boardSkinIdW2
+  showMenu();
 }
 function showFab() { // [1.10.1]
   const el = document.getElementById('tester-fab');
@@ -4423,6 +4512,7 @@ function renderFabMenu() { // [1.10.1]
     html += fabToggle('Black Hole',      customCfg.blackhole, 'fab-cg-blackhole');
     html += fabToggle('FPS counter',     tFps,                'fab-fps');
     html += `<button class="fab-action" onclick="showMenu()">← Exit sandbox</button>`;
+    html += _fabExitTesterBtn(); // [2.0-w1fix]
     menu.innerHTML = html;
     attachFabToggles();
     return;
@@ -4498,8 +4588,15 @@ function renderFabMenu() { // [1.10.1]
     html += fabToggle('Black Hole',      customCfg.blackhole,'fab-cg-blackhole');
     html += `<button class="fab-action" onclick="startCustomGame()">▶ Start Custom Game</button>`;
   } // [1.12] end !alive block
+  html += _fabExitTesterBtn(); // [2.0-w1fix] always reachable, alive or not
   menu.innerHTML = html;
   attachFabToggles();
+}
+
+// [2.0-w1fix] the one way out of tester mode — restores the pre-tester snapshot
+function _fabExitTesterBtn() {
+  return `<div class="fab-section">🚪 Tester</div>`
+       + `<button class="fab-action" onclick="exitTesterMode()">🚪 EXIT TESTER</button>`;
 }
 
 function fabToggle(label, state, id) { // [1.10.1]
@@ -4984,7 +5081,7 @@ function startGame(hard = false, fromTester = false, custom = false, tutorial = 
   tutorialActive = tutorial; // [2.0-s4h] set on every entry → real games always clear it
   // [1.10.1] testerActive is persistent — don't override; save snap if active
   if (testerActive) {
-    _saveTesterSnap(); // [1.9.2] Bug #3: snapshot before tester-earned coins
+    // [2.0-w1fix] snapshot moved to enableTesterMode() — re-taking it here overwrote the baseline every game
     SKINS.forEach(s=>{ if(!owned.includes(s.id)) owned.push(s.id); });
     // no save() — tester unlocks stay in memory only
   }
@@ -5051,6 +5148,8 @@ function closeShop(){
   else if (alive) { showScreen('app'); startRound(); }
   else showMenu();
 }
+let _shopUnlockFx = null; // [2.0-w1fix] {kind:'skin'|'board'|'laser', id} — one-shot baton, consumed by the next renderShop()
+
 function renderShop(){ // [1.9] tab-aware
   shopBal.textContent=`🪙 ${coins}`;
   // sync tab buttons
@@ -5067,6 +5166,48 @@ function renderShop(){ // [1.9] tab-aware
     shopGrid.style.display = 'none';
     if (shopGridBL) { shopGridBL.style.display = ''; renderShopBLTab(); }
   }
+  _shopUnlockFx = null; // [2.0-w1fix] one-shot — never carries over into a later render
+}
+
+// ── SHOP LOCK / UNLOCK VISUALS ── [2.0-w1fix]
+// Prestige items keep the old solid 🔒 tile (no preview). Ordinary unowned items now show a
+// greyed-out preview with a thin lock on top, which drops away when you buy them.
+function _shopDrawLockTile(cv) { // [2.0-w1fix] prestige tile — unchanged look, extracted so both tabs share it
+  const c2 = cv.getContext('2d');
+  c2.fillStyle = '#0a0a18'; c2.fillRect(0, 0, cv.width, cv.height);
+  c2.fillStyle = '#334'; c2.font = '18px serif'; c2.textAlign = 'center';
+  c2.fillText('🔒', cv.width / 2, cv.height * 0.684);
+}
+
+function _shopLockOverlay() { // [2.0-w1fix] thin outline padlock, same line-art style as the mode-card icons
+  const el = document.createElement('div');
+  el.className = 'shop-lock-overlay';
+  el.innerHTML = `<svg viewBox="0 0 24 24"><rect x="5" y="10.5" width="14" height="10" rx="2"/>`
+               + `<path d="M8.2 10.5V7.8a3.8 3.8 0 0 1 7.6 0v2.7"/><circle cx="12" cy="15.5" r="1.3"/></svg>`;
+  return el;
+}
+
+function _shopMarkLocked(card) { // [2.0-w1fix] affordable-or-not, it just isn't owned yet
+  card.classList.add('shop-locked');
+  card.appendChild(_shopLockOverlay());
+}
+
+function _shopPlayUnlockFx(card, kind, id) { // [2.0-w1fix] lock falls away, then the preview glows
+  if (!_shopUnlockFx || _shopUnlockFx.kind !== kind || _shopUnlockFx.id !== id) return;
+  _shopUnlockFx = null;
+  const lock = _shopLockOverlay();
+  lock.classList.add('shop-unlock-anim');
+  card.appendChild(lock);
+  card.classList.add('shop-glow-reveal');
+  setTimeout(() => lock.remove(), 420);
+  setTimeout(() => card.classList.remove('shop-glow-reveal'), 2500);
+}
+
+function _shopDeny(cardEl) { // [2.0-w1fix] can't afford it: sound + shake, no text — the balance line stays a balance line
+  playError();
+  if (!cardEl) return;
+  cardEl.classList.remove('shake-deny'); void cardEl.offsetWidth; cardEl.classList.add('shake-deny');
+  setTimeout(() => cardEl.classList.remove('shake-deny'), 340);
 }
 
 function renderShopCubeTab() { // [1.9] extracted from old renderShop
@@ -5102,10 +5243,7 @@ function renderShopCubeTab() { // [1.9] extracted from old renderShop
         drawSkin(cv.getContext('2d'),s.id,0,0,38,skinAnimT);
         if (isActive) cv.style.boxShadow=`0 0 10px ${skinColor()}`;
       } else {
-        const c2=cv.getContext('2d');
-        c2.fillStyle='#0a0a18'; c2.fillRect(0,0,38,38);
-        c2.fillStyle='#334'; c2.font='18px serif'; c2.textAlign='center';
-        c2.fillText('🔒',19,26);
+        _shopDrawLockTile(cv); // [2.0-w1fix]
       }
 
       const nm=document.createElement('div'); nm.className='skin-name'; nm.textContent=s.name;
@@ -5120,7 +5258,11 @@ function renderShopCubeTab() { // [1.9] extracted from old renderShop
       if (isLocked) pr.style.cssText='font-size:9px;color:#664;text-align:center;line-height:1.3;';
 
       card.append(cv,nm,pr);
-      if (!isLocked) card.addEventListener('click',()=>buySkin(s.id));
+      if (!isLocked) { // [2.0-w1fix] ordinary items: greyed preview + thin lock instead of the prestige tile
+        if (!isOwned) _shopMarkLocked(card);
+        card.addEventListener('click',()=>buySkin(s.id, card));
+        _shopPlayUnlockFx(card, 'skin', s.id);
+      }
       shopGrid.appendChild(card);
     }
   }
@@ -5142,37 +5284,51 @@ function renderShopBLTab() { // [1.9] board skins + laser colors tab
   gridToggleRow.addEventListener('click', toggleNoGrid);
   shopGridBL.appendChild(gridToggleRow);
 
-  // ── SECTION A: BOARD SKINS — Void-only (World 2) ── [2.0-s5a-r9]
-  if (currentWorld === 2) {
-    const bHeader = document.createElement('div');
-    bHeader.className = 'shop-section-header';
-    bHeader.textContent = '— BOARD SKINS —';
-    shopGridBL.appendChild(bHeader);
+  const isVoid = currentWorld === 2; // [2.0-s5b]
 
-    for (const def of VOID_BOARD_SKIN_LIST) {
-      const isOwned  = voidBoardsOwned.includes(def.id); // [2.0-s5b]
-      const isActive = boardSkinIdW2 === def.id;
+  // ── SECTION A: BOARD SKINS ── [2.0-w1fix] rendered in both worlds again;
+  // World 1 buys with coins, World 2 still only drops from the loot box.
+  const bHeader = document.createElement('div');
+  bHeader.className = 'shop-section-header';
+  bHeader.textContent = '— BOARD SKINS —';
+  shopGridBL.appendChild(bHeader);
 
-      const card = document.createElement('div');
-      card.className = 'skin-card' + (isActive?' active':isOwned?' owned':'');
-      if (!isOwned) card.style.opacity = '.5';
+  for (const def of (isVoid ? VOID_BOARD_SKIN_LIST : BOARD_SKIN_LIST)) {
+    const isOwned    = isVoid ? voidBoardsOwned.includes(def.id) : boardsOwned.includes(def.id); // [2.0-s5b]
+    const isActive   = (isVoid ? boardSkinIdW2 : boardSkinId) === def.id;
+    const isPrestige = !!def.unlock;            // [2.0-w1fix] Prestige Gold — record unlock, not purchasable
+    const isLocked   = isPrestige && !isOwned;
 
-      const cv = document.createElement('canvas');
-      cv.width = cv.height = 38; cv.className = 'skin-preview';
+    const card = document.createElement('div');
+    card.className = 'skin-card' + (isActive?' active':isOwned?' owned':'');
+    if (isLocked || (isVoid && !isOwned)) card.style.opacity = '.5';
+
+    const cv = document.createElement('canvas');
+    cv.width = cv.height = 38; cv.className = 'skin-preview';
+    if (isLocked) _shopDrawLockTile(cv); // [2.0-w1fix]
+    else {
       drawBoardPreview(cv, def.id);
       if (isActive) cv.style.boxShadow = `0 0 10px ${BOARD_SKINS[def.id].grid}`;
-
-      const nm = document.createElement('div'); nm.className = 'skin-name'; nm.textContent = def.name;
-      const pr = document.createElement('div');
-      pr.className = 'skin-price' + (isOwned||isActive?' owned':'');
-      if (isActive)       pr.textContent = '✓ Active';
-      else if (isOwned)   pr.textContent = 'Equip';
-      else                pr.textContent = '🔒 Loot box'; // [2.0-s5b] only obtainable via loot box
-
-      card.append(cv,nm,pr);
-      card.addEventListener('click', ()=>buyBoardSkinW2(def.id));
-      shopGridBL.appendChild(card);
     }
+
+    const nm = document.createElement('div'); nm.className = 'skin-name'; nm.textContent = def.name;
+    const pr = document.createElement('div');
+    pr.className = 'skin-price' + (isOwned||isActive?' owned':'');
+    if (isActive)           pr.textContent = '✓ Active';
+    else if (isOwned)       pr.textContent = 'Equip';
+    else if (isVoid)        pr.textContent = '🔒 Loot box'; // [2.0-s5b] only obtainable via loot box
+    else if (isLocked)    { pr.textContent = def.unlockDesc; pr.style.cssText='font-size:9px;color:#664;text-align:center;line-height:1.3;'; } // [2.0-w1fix]
+    else if (def.price===0) pr.textContent = 'Free';
+    else                    pr.textContent = `${def.price} 🪙`;
+
+    card.append(cv,nm,pr);
+    if (isVoid) card.addEventListener('click', ()=>buyBoardSkinW2(def.id));
+    else if (!isLocked) { // [2.0-w1fix] World 1 board skins are buyable again
+      if (!isOwned) _shopMarkLocked(card);
+      card.addEventListener('click', ()=>buyBoardSkin(def.id, card));
+      _shopPlayUnlockFx(card, 'board', def.id);
+    }
+    shopGridBL.appendChild(card);
   }
 
   // ── SECTION B: LASER COLORS ──
@@ -5181,7 +5337,6 @@ function renderShopBLTab() { // [1.9] board skins + laser colors tab
   lHeader.textContent = '— LASER COLORS —';
   shopGridBL.appendChild(lHeader);
 
-  const isVoid         = currentWorld === 2; // [2.0-s5b]
   const laserList      = isVoid ? VOID_LASER_COLOR_LIST : LASER_COLOR_LIST; // [2.0-s5a-r8]
   const laserOwnedList = isVoid ? voidLasersOwned : lasersOwned; // [2.0-s5b]
   const laserActiveId  = isVoid ? laserColorIdW2 : laserColorId;
@@ -5210,16 +5365,38 @@ function renderShopBLTab() { // [1.9] board skins + laser colors tab
     else                pr.textContent = `${def.price} 🪙`;
 
     card.append(cv,nm,pr);
-    card.addEventListener('click', ()=>buyLaserFn(def.id));
+    if (!isVoid && !isOwned) _shopMarkLocked(card); // [2.0-w1fix] W1 lasers get the same locked treatment
+    card.addEventListener('click', ()=>buyLaserFn(def.id, card));
+    if (!isVoid) _shopPlayUnlockFx(card, 'laser', def.id); // [2.0-w1fix]
     shopGridBL.appendChild(card);
   }
 }
-function buySkin(id){
+function buySkin(id, cardEl){
   const s=SKINS.find(x=>x.id===id); if(!s||skinId===id) return;
   if (owned.includes(id)){skinId=id; invalidateSkinCache(); save(); playSkinSelect(); renderShop(); return;} // [1.9.2]
-  if (coins<s.price){playError(); shopBal.textContent=`Not enough 🪙 (you have ${coins}, need ${s.price})`; return;} // [1.9.2]
-  coins-=s.price; owned.push(id); skinId=id; invalidateSkinCache(); save(); playSkinSelect(); renderShop(); // [1.9.2]
+  if (coins<s.price){ _shopDeny(cardEl); return; } // [2.0-w1fix] sound + shake, no text
+  coins-=s.price; owned.push(id); skinId=id; invalidateSkinCache(); save(); playSkinSelect(); // [1.9.2]
+  _shopUnlockFx={kind:'skin',id}; renderShop(); // [2.0-w1fix]
   shopBal.classList.remove('purchase-flash'); void shopBal.offsetWidth; shopBal.classList.add('purchase-flash'); // [1.9.3]
+}
+
+// [2.0-w1fix] World 1 board skins — bought with coins (mirrors buyLaserColor); W2 boards stay loot-box-only
+function buyBoardSkin(id, cardEl) {
+  const def = BOARD_SKIN_LIST.find(b=>b.id===id);
+  if (!def) return;
+  if (def.unlock && !boardsOwned.includes(id)) return; // Prestige Gold: earned by beating round records
+  if (boardsOwned.includes(id)) {
+    if (boardSkinId === id) return;
+    boardSkinId = id; localStorage.setItem('cm_board', id);
+    applyBoardSkin(); playSkinSelect(); renderShop(); return;
+  }
+  if (def.price > 0 && coins < def.price) { _shopDeny(cardEl); return; }
+  if (def.price > 0) coins -= def.price;
+  boardsOwned.push(id); localStorage.setItem('cm_boards_owned', JSON.stringify(boardsOwned));
+  boardSkinId = id; localStorage.setItem('cm_board', id);
+  applyBoardSkin(); save(); playSkinSelect();
+  _shopUnlockFx={kind:'board',id}; renderShop();
+  shopBal.classList.remove('purchase-flash'); void shopBal.offsetWidth; shopBal.classList.add('purchase-flash');
 }
 
 function buyBoardSkinW2(id) { // [2.0-s5a-r9][2.0-s5b] equip-only — ownership comes from the loot box
@@ -5229,20 +5406,19 @@ function buyBoardSkinW2(id) { // [2.0-s5a-r9][2.0-s5b] equip-only — ownership 
   applyBoardSkin(); playSkinSelect(); renderShop();
 }
 
-function buyLaserColor(id) { // [1.9]
+function buyLaserColor(id, cardEl) { // [1.9]
   const def = LASER_COLOR_LIST.find(c=>c.id===id);
   if (!def) return;
   if (lasersOwned.includes(id)) {
     laserColorId = id; localStorage.setItem('cm_laser', id);
     playSkinSelect(); renderShop(); return; // [1.9.2]
   }
-  if (def.price > 0 && coins < def.price) {
-    playError(); shopBal.textContent = `Not enough 🪙 (you have ${coins}, need ${def.price})`; return; // [1.9.2]
-  }
+  if (def.price > 0 && coins < def.price) { _shopDeny(cardEl); return; } // [2.0-w1fix] sound + shake, no text
   if (def.price > 0) { coins -= def.price; save(); }
   lasersOwned.push(id); localStorage.setItem('cm_lasers_owned', JSON.stringify(lasersOwned));
   laserColorId = id; localStorage.setItem('cm_laser', id);
-  playSkinSelect(); renderShop(); // [1.9.2]
+  playSkinSelect(); // [1.9.2]
+  _shopUnlockFx={kind:'laser',id}; renderShop(); // [2.0-w1fix]
   shopBal.classList.remove('purchase-flash'); void shopBal.offsetWidth; shopBal.classList.add('purchase-flash'); // [1.9.3]
 }
 

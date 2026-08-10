@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
 <title>Gridlock</title><!-- [1.9.1] renamed -->
-<link rel="stylesheet" href="cube_master.css?v=2.0-s5c.2">
+<link rel="stylesheet" href="cube_master.css?v=2.0-w1fix">
 </head>
 <body>
 <div id="intro-overlay"></div>
@@ -148,19 +148,25 @@
   </div>
   <div id="modes-list">
     <div class="mode-card" id="mode-card-timeattack">
-      <div class="mode-card-icon">⏱</div>
+      <div class="mode-card-icon"><!-- [2.0-w1fix] stopwatch -->
+        <svg viewBox="0 0 24 24"><circle cx="12" cy="13.5" r="7.5"/><polyline points="12,9 12,13.5 15,15.5"/><line x1="9.5" y1="2.5" x2="14.5" y2="2.5"/><line x1="12" y1="2.5" x2="12" y2="6"/></svg>
+      </div>
       <div class="mode-card-name">TIME ATTACK</div>
       <div class="mode-card-desc">60 seconds — score as many rounds as possible</div>
       <div class="mode-card-status"></div>
     </div>
     <div class="mode-card" id="mode-card-hardcore">
-      <div class="mode-card-icon">💀</div>
+      <div class="mode-card-icon"><!-- [2.0-w1fix] cracked heart — one life -->
+        <svg viewBox="0 0 24 24"><path d="M12 20.5 3.8 12.3a4.9 4.9 0 0 1 6.9-6.9l1.3 1.3 1.3-1.3a4.9 4.9 0 0 1 6.9 6.9Z"/><polyline points="12,6.7 10,12 13.5,13.2 11.4,20.1"/></svg>
+      </div>
       <div class="mode-card-name">HARDCORE</div>
       <div class="mode-card-desc">One life per day — death locks you out till midnight</div>
       <div class="mode-card-status"></div>
     </div>
     <div class="mode-card" id="mode-card-daily">
-      <div class="mode-card-icon">📅</div>
+      <div class="mode-card-icon"><!-- [2.0-w1fix] calendar -->
+        <svg viewBox="0 0 24 24"><rect x="3.2" y="5" width="17.6" height="16" rx="2.5"/><line x1="3.2" y1="10" x2="20.8" y2="10"/><line x1="8" y1="2.6" x2="8" y2="6.4"/><line x1="16" y1="2.6" x2="16" y2="6.4"/><circle cx="12" cy="15.5" r="1.6"/></svg>
+      </div>
       <div class="mode-card-name">DAILY</div>
       <div class="mode-card-desc">Today's fixed challenge — one attempt, shared by all</div>
       <div class="mode-card-status"></div>
@@ -304,6 +310,6 @@
   <button id="void-reveal-ok">CONTINUE</button>
 </div>
 
-<script src="cube_master.js?v=2.0-s5c.2"></script>
+<script src="cube_master.js?v=2.0-w1fix"></script>
 </body>
 </html>
