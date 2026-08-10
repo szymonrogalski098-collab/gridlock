@@ -273,6 +273,18 @@ function bossVictory() { // [1.11]
   if (currentWorld === 2) { crystals += cfg.reward; sessionCrystalsEarned += cfg.reward; } // [2.0-s1]
   else { coins += cfg.reward; sessionCoinsEarned += cfg.reward; }
   addCurrencyTotal(cfg.reward); // [2.0-s3] W1→coins stat, W2→crystals stat
+  // [2.0-bossfix] boss rounds skip startRound()'s normal-round tracking block entirely (they
+  // return early into startBossRound() instead), so mission/combo progress silently vanished
+  // for every boss win. No addStatLasers()/mTrackLaserDodged() here on purpose — boss combat
+  // doesn't have "lasers dodged" in the dash sense, and forcing it would inflate that stat.
+  if (!testerActive) {
+    mTrackRoundSurvived(false); // boss round counts toward "rounds_played" for missions
+    mTrackCoins(cfg.reward);
+    mTrackTime(Math.round(CHARGE_START/1000) + 2); // approximate duration of the boss round
+  }
+  comboCount += comboStep;
+  if (comboCount > bestComboThisSession) bestComboThisSession = comboCount;
+  recordBestCombo(comboCount); // [2.0-s3] per world
   save();
   if (hudTimerEl) hudTimerEl.style.display = 'none';
   flash(`BOSS DEFEATED! +${cfg.reward} ${curIcon()}`); // [2.0-s1]
@@ -323,6 +335,16 @@ function w2BossVictory() { // [2.0-s4b]
   _cleanupBoss();
   crystals += cfg.reward; sessionCrystalsEarned += cfg.reward;
   addCurrencyTotal(cfg.reward);
+  // [2.0-bossfix] same gap as bossVictory() (W1) — see the comment there. Applies to every
+  // W2 boss (PULSAR/NEUTRON/SINGULARITY), not just the W1 VOID KING the bug was reported for.
+  if (!testerActive) {
+    mTrackRoundSurvived(false);
+    mTrackCoins(cfg.reward);
+    mTrackTime(Math.round(CHARGE_START/1000) + 2);
+  }
+  comboCount += comboStep;
+  if (comboCount > bestComboThisSession) bestComboThisSession = comboCount;
+  recordBestCombo(comboCount);
   save();
   if (hudTimerEl) hudTimerEl.style.display = 'none';
   flash(`${cfg.name} DEFEATED! +${cfg.reward} ✦`);
