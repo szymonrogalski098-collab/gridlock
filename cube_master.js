@@ -973,6 +973,13 @@ const hudCombo     = document.getElementById('hud-combo'); // [1.9.2]
 const hudTimerEl   = document.getElementById('hud-timer');   // [1.10]
 const hudGridlock  = document.getElementById('hud-gridlock'); // [1.12]
 const hudBlackhole = document.getElementById('hud-blackhole'); // [2.0-s2]
+// [2.0-deemoji] value spans — the icon beside them is static SVG in index.html, so the HUD tick
+// only ever writes text and the markup is never re-parsed
+const hudDashVal      = document.getElementById('hud-dash-val');
+const hudComboVal     = document.getElementById('hud-combo-val');
+const hudTimerVal     = document.getElementById('hud-timer-val');
+const hudGridlockVal  = document.getElementById('hud-gridlock-val');
+const hudBlackholeVal = document.getElementById('hud-blackhole-val');
 
 // ══════════════════════════════════════════════════
 // SOUND (Web Audio API — synthetic)
@@ -1988,23 +1995,23 @@ function render() {
     hudCoins.classList.remove('hud-bump'); void hudCoins.offsetWidth;
     hudCoins.classList.add('hud-bump');
   }
-  hudInfo.textContent  = customGame // [2.0-s3.2]
-    ? '🧪 CUSTOM'
+  hudInfo.textContent  = customGame // [2.0-s3.2][2.0-deemoji] multi-state line stays plain text
+    ? 'CUSTOM'
     : (bossRound && bossActive && w2Boss) // [2.0-s4b] W2 active-combat boss: hits + shield
-    ? `✦ ${w2Boss.name} · ${bossHitsLeft} hit${bossHitsLeft===1?'':'s'} left${Date.now()<bossShieldUntil?' · 🛡':''} · +${w2Boss.reward} ✦`
+    ? `${w2Boss.name} · ${bossHitsLeft} hit${bossHitsLeft===1?'':'s'} left${Date.now()<bossShieldUntil?' · SHIELD':''} · +${w2Boss.reward} ✦`
     : (bossRound && bossActive) // [1.11]
-    ? `👾 ${BOSS_CONFIG[bossTier].name} · +${BOSS_CONFIG[bossTier].reward} 🪙`
-    : `${testerActive ? '⚙ TEST · ' : ''}Round ${round} · ${aliveTime()}s`; // [1.9]
+    ? `${BOSS_CONFIG[bossTier].name} · +${BOSS_CONFIG[bossTier].reward} 🪙`
+    : `${testerActive ? 'TEST · ' : ''}Round ${round} · ${aliveTime()}s`; // [1.9]
   if (round !== _prevHudRound) { // [1.9.3]
     _prevHudRound = round;
     hudInfo.classList.remove('hud-bump'); void hudInfo.offsetWidth;
     hudInfo.classList.add('hud-bump');
   }
-  hudDash.textContent  = `⚡ ${testerActive && tDashInf ? '∞' : dashesLeft}`;
+  hudDashVal.textContent = `${testerActive && tDashInf ? '∞' : dashesLeft}`; // [2.0-deemoji]
   updateBlackHoleHud(); // [2.0-s2]
   // [1.9.2] Combo indicator — only visible when combo >= 5
   if (comboCount >= 5) {
-    hudCombo.textContent = `🔥 x${comboCount}`; hudCombo.style.display = '';
+    hudComboVal.textContent = `x${comboCount}`; hudCombo.style.display = ''; // [2.0-deemoji]
     if (comboCount !== _prevCombo) { // [1.9.3]
       _prevCombo = comboCount;
       hudCombo.classList.remove('combo-pop'); void hudCombo.offsetWidth;
@@ -2045,7 +2052,7 @@ function animateCounter(id, target, duration) { // [1.9.3]
 function showComboFlash(combo, bonus) { // [1.9.2]
   const el = document.getElementById('combo-flash');
   if (!el) return;
-  el.textContent = `🔥 Combo x${combo}! +${bonus} bonus ${curIcon()}`; // [2.0-s1]
+  el.textContent = `Combo x${combo}! +${bonus} bonus ${curIcon()}`; // [2.0-s1][2.0-deemoji]
   el.style.display = 'block'; el.style.opacity = '1';
   clearTimeout(el._t1); clearTimeout(el._t2);
   const _cf1 = testerActive ? (1200 / Math.max(0.01, tSpeedMult)) : 1200; // [1.10.2]
@@ -2060,19 +2067,19 @@ function showComboFlash(combo, bonus) { // [1.9.2]
 setInterval(()=>{
   if (fabPaused) return; // [1.10.2] halt all HUD logic while paused
   if (alive && appEl.style.visibility !== 'hidden') {
-    hudInfo.textContent = customGame // [2.0-s3.2]
-      ? '🧪 CUSTOM'
+    hudInfo.textContent = customGame // [2.0-s3.2][2.0-deemoji]
+      ? 'CUSTOM'
       : (bossRound && bossActive) // [1.11]
-      ? `👾 ${BOSS_CONFIG[bossTier].name} · +${BOSS_CONFIG[bossTier].reward} 🪙`
-      : `${testerActive?'⚙ TEST · ':''}Round ${round} · ${aliveTime()}s`; // [1.9]
+      ? `${BOSS_CONFIG[bossTier].name} · +${BOSS_CONFIG[bossTier].reward} 🪙`
+      : `${testerActive?'TEST · ':''}Round ${round} · ${aliveTime()}s`; // [1.9]
     hudCoins.textContent = gridlockActive ? `${curIcon()} ${curWallet()} ×2` : `${curIcon()} ${curWallet()}`; // [1.12][2.0-s1]
     updateBlackHoleHud(); // [2.0-s2]
     if (gameMode === 'timeattack') { // [1.10]
       const virtualMs = _virtMs(); // [1.10.2-fix]
       const left = Math.max(0, Math.ceil((60000 - virtualMs) / 1000));
-      if (hudTimerEl) {
-        hudTimerEl.textContent = `⏱ ${left}s`;
-        hudTimerEl.className = left <= 10 ? 'urgent' : '';
+      if (hudTimerVal) { // [2.0-deemoji] write the value, keep the static icon; classList so the markup survives
+        hudTimerVal.textContent = `${left}s`;
+        hudTimerEl.classList.toggle('urgent', left <= 10);
       }
       if (virtualMs >= 60000) _timeAttackOver();
     }
@@ -2396,14 +2403,17 @@ function updateBlackHoleHud() { // [2.0-s2] cooldown indicator, World 2 only
   if (!hudBlackhole) return;
   if (!_blackHoleEnabled()) { hudBlackhole.style.display = 'none'; return; } // [2.0-s3.1]
   hudBlackhole.style.display = '';
-  if (testerActive && tInfBlackHole) { hudBlackhole.textContent = '⚫ ∞'; hudBlackhole.className = 'bh-ready'; return; } // [2.0-s4d]
+  // [2.0-deemoji] value-only writes; the singularity icon is static SVG and picks up bh-ready /
+  // bh-cooldown colour through stroke:currentColor
+  const _bh = (txt, cls) => { hudBlackholeVal.textContent = txt; hudBlackhole.className = cls; };
+  if (testerActive && tInfBlackHole) { _bh('∞', 'bh-ready'); return; } // [2.0-s4d]
   if (w2Boss && bossRound) { // [2.0-s4g] time-based countdown during W2 boss
     const msLeft = blackHoleReadyAt - Date.now();
-    if (msLeft <= 0) { hudBlackhole.textContent = '⚫ Ready'; hudBlackhole.className = 'bh-ready'; }
-    else { hudBlackhole.textContent = `⚫ ${Math.ceil(msLeft/1000)}s`; hudBlackhole.className = 'bh-cooldown'; }
+    if (msLeft <= 0) _bh('Ready', 'bh-ready');
+    else             _bh(`${Math.ceil(msLeft/1000)}s`, 'bh-cooldown');
   } else {
-    if (blackHoleCooldown <= 0) { hudBlackhole.textContent = '⚫ Ready'; hudBlackhole.className = 'bh-ready'; }
-    else { hudBlackhole.textContent = `⚫ ${blackHoleCooldown}r`; hudBlackhole.className = 'bh-cooldown'; }
+    if (blackHoleCooldown <= 0) _bh('Ready', 'bh-ready');
+    else                        _bh(`${blackHoleCooldown}r`, 'bh-cooldown');
   }
 }
 
@@ -2525,12 +2535,12 @@ function tryDash(x,y) {
   // [2.0-s2] World 2: long-range click = Black Hole teleport (independent of dashesLeft)
   if (_blackHoleEnabled() && d > DASH_RANGE) { // [2.0-s3.1]
     if (w2Boss && bossRound) { // [2.0-s4g] time-based gate during W2 boss
-      if (Date.now() < blackHoleReadyAt && !(testerActive && tInfBlackHole)) { flash('⚫ NOT READY'); return; }
+      if (Date.now() < blackHoleReadyAt && !(testerActive && tInfBlackHole)) { flash('NOT READY'); return; }
     } else {
-      if (blackHoleCooldown > 0 && !(testerActive && tInfBlackHole)) { flash('⚫ NOT READY'); return; } // [2.0-s4d]
+      if (blackHoleCooldown > 0 && !(testerActive && tInfBlackHole)) { flash('NOT READY'); return; } // [2.0-s4d]
     }
     const dest = `${x},${y}`;
-    if (getBossCells().has(dest) || bossShockwaveCells.has(dest) || flareCellHas(x,y)) { flash('💥 Blocked!'); return; }
+    if (getBossCells().has(dest) || bossShockwaveCells.has(dest) || flareCellHas(x,y)) { flash('Blocked!'); return; }
     startBlackHole(x, y);
     return;
   }
@@ -2550,7 +2560,7 @@ function tryDash(x,y) {
     const dest = `${cube.x},${cube.y}`;
     if (getBossCells().has(dest) || bossShockwaveCells.has(dest)) {
       cube.x = prevX; cube.y = prevY;
-      flash('💥 Blocked!');
+      flash('Blocked!');
       render();
       return;
     }
@@ -2620,7 +2630,7 @@ function generateBlocks(countOverride) { // [2.0-s3.2] optional count for the sa
 // ══════════════════════════════════════════════════
 function _customStart() {
   clearTimeout(phaseTimer);
-  flash('🧪 SANDBOX');
+  flash('SANDBOX');
   if (_asteroidsEnabled() && !asteroidTimer) scheduleAsteroid();
   _customCycle();
 }
@@ -2793,7 +2803,7 @@ let _modBannerTimer = null;
 function showModBanner(mod, duration) { // [2.0-s3] brief center banner naming the modifier
   const el = document.getElementById('round-mod-banner');
   if (!el) return;
-  el.innerHTML = `<div class="rmb-name">⚡ ${mod.name}! (${duration} round${duration>1?'s':''})</div><div class="rmb-hint">${mod.hint}</div>`; // [2.0-s3.1] show duration
+  el.innerHTML = `<div class="rmb-name">${mod.name}! (${duration} round${duration>1?'s':''})</div><div class="rmb-hint">${mod.hint}</div>`; // [2.0-s3.1] show duration [2.0-deemoji]
   el.classList.remove('show'); void el.offsetWidth; // restart animation
   el.classList.add('show');
   const wrap = document.getElementById('board-wrap');
@@ -2824,11 +2834,11 @@ function _endGridlockMode(natural) { // [1.12]
   const wrap = document.getElementById('board-wrap');
   if (wrap) wrap.classList.remove('gridlock-glitch-fx');
   if (hudGridlock) hudGridlock.style.display = 'none';
-  if (natural) { flash('⚡ GRIDLOCK END'); playGridlockEnd(); }
+  if (natural) { flash('GRIDLOCK END'); playGridlockEnd(); }
 }
 
 function showGridlockEntry() { // [1.12]
-  flash('⚡ GRIDLOCK MODE!');
+  flash('GRIDLOCK MODE!');
   const wrap = document.getElementById('board-wrap');
   if (wrap) {
     wrap.classList.add('gridlock-entry-flash');
@@ -2848,7 +2858,7 @@ function activateGridlockMode() { // [1.12]
     const wrap = document.getElementById('board-wrap');
     if (wrap) { wrap.classList.add('gridlock-glitch-fx'); setTimeout(() => wrap.classList.remove('gridlock-glitch-fx'), 130); }
   }, 500);
-  if (hudGridlock) { hudGridlock.style.display = ''; hudGridlock.textContent = `⚡ GRIDLOCK x${gridlockRoundsLeft}`; }
+  if (hudGridlock) { hudGridlock.style.display = ''; hudGridlockVal.textContent = `GRIDLOCK x${gridlockRoundsLeft}`; } // [2.0-deemoji]
   if (testerActive) renderFabMenu();
 }
 
@@ -2903,7 +2913,7 @@ function _bossPushPlayer() { // [2.0-s2] if a boss spawns on the player, shove t
   }
 }
 function _bossPushFlash() { // [2.0-s2]
-  flash('💨 Pushed!');
+  flash('Pushed!');
   spawnDashParticles(cube.x, cube.y);
 }
 
@@ -2919,14 +2929,14 @@ function startBossRound(tier) { // [1.11]
   bossTimeLeft = 20;
   lasers = []; blocks = [];
   asteroids = []; clearTimeout(asteroidTimer); asteroidTimer = null; // [2.0-s2] asteroids pause during boss
-  if (hudTimerEl) { hudTimerEl.style.display = ''; hudTimerEl.textContent = '⏱ 20s'; hudTimerEl.className = ''; }
-  flash('👾 BOSS INCOMING!');
+  if (hudTimerEl) { hudTimerEl.style.display = ''; hudTimerVal.textContent = '20s'; hudTimerEl.classList.remove('urgent'); } // [2.0-deemoji]
+  flash('BOSS INCOMING!');
   render(); startAnim();
   bossAttackTimers.push(setTimeout(() => {
     if (!alive || !bossRound) return;
     bossActive = true;
     _bossPushPlayer(); // [2.0-s2] shove player out of boss cells on spawn
-    flash(`👾 ${BOSS_CONFIG[tier].name}`);
+    flash(`${BOSS_CONFIG[tier].name}`);
     render();
     // [2.0-s4] self-rescheduling throw loop with ±20% timing jitter
     _scheduleBossThrow();
@@ -2941,8 +2951,8 @@ function startBossRound(tier) { // [1.11]
       if (fabPaused) return;
       bossTimeLeft--;
       if (hudTimerEl) {
-        hudTimerEl.textContent = `⏱ ${bossTimeLeft}s`;
-        hudTimerEl.className = bossTimeLeft <= 5 ? 'urgent' : '';
+        hudTimerVal.textContent = `${bossTimeLeft}s`; // [2.0-deemoji]
+        hudTimerEl.classList.toggle('urgent', bossTimeLeft <= 5);
       }
       if (bossTimeLeft <= 0) { clearInterval(bossTimer); bossVictory(); }
     }, 1000);
@@ -3048,7 +3058,7 @@ function _scheduleBossRain() { // [1.11] — once per fight, random 4–16 s
   const delay = 4000 + Math.random() * 12000;
   bossAttackTimers.push(setTimeout(() => {
     if (!alive || !bossRound) return;
-    flash('⚠ BLOCK RAIN!'); render();
+    flash('BLOCK RAIN!'); render();
     bossAttackTimers.push(setTimeout(_startBlockRain, 500));
   }, delay));
 }
@@ -3093,7 +3103,7 @@ function _scheduleBossShockwave() { // [1.11] — once per fight, random 5–16 
   const delay = 5000 + Math.random() * 11000;
   bossAttackTimers.push(setTimeout(() => {
     if (!alive || !bossRound) return;
-    flash('⚠ SHOCKWAVE!'); render();
+    flash('SHOCKWAVE!'); render();
     bossAttackTimers.push(setTimeout(_triggerBossShockwave, 300));
   }, delay));
 }
@@ -3126,7 +3136,7 @@ function bossVictory() { // [1.11]
   addCurrencyTotal(cfg.reward); // [2.0-s3] W1→coins stat, W2→crystals stat
   save();
   if (hudTimerEl) hudTimerEl.style.display = 'none';
-  flash(`🏆 BOSS DEFEATED! +${cfg.reward} ${curIcon()}`); // [2.0-s1]
+  flash(`BOSS DEFEATED! +${cfg.reward} ${curIcon()}`); // [2.0-s1]
   render();
   // [2.0-s1] World-1 VOID KING tears the rift — only the first time, and only from Normal/Hard (gameMode null) [2.0-s2]
   if (wasVoidKing && currentWorld === 1 && gameMode === null && !world2Unlocked) {
@@ -3154,13 +3164,13 @@ function startW2Boss(idx, speedMult) { // [2.0-s4b]
   lasers = []; blocks = [];
   asteroids = []; clearTimeout(asteroidTimer); asteroidTimer = null;
   if (hudTimerEl) hudTimerEl.style.display = 'none'; // no countdown — W2 is hit-based
-  flash('✦ COSMIC BOSS APPROACHES!');
+  flash('COSMIC BOSS APPROACHES!');
   render(); startAnim();
   bossAttackTimers.push(setTimeout(() => {
     if (!alive || !bossRound) return;
     bossActive = true;
     _bossPushPlayer();
-    flash(`✦ ${cfg.name}`);
+    flash(`${cfg.name}`);
     render();
     _w2SpawnHitPlate();
     _w2ScheduleAttacks(cfg);
@@ -3176,7 +3186,7 @@ function w2BossVictory() { // [2.0-s4b]
   addCurrencyTotal(cfg.reward);
   save();
   if (hudTimerEl) hudTimerEl.style.display = 'none';
-  flash(`🏆 ${cfg.name} DEFEATED! +${cfg.reward} ✦`);
+  flash(`${cfg.name} DEFEATED! +${cfg.reward} ✦`);
   render();
   phaseTimer = _schedulePhase(startRound, 2000); // resume the W2 run
 }
@@ -3231,7 +3241,7 @@ function _w2SpawnTurret() { // [2.0-s4b] emitter on a free adjacent cell; fixed 
     bossShieldUntil = Date.now() + (5000 + Math.random() * 5000); // 5–10s shield
     playBossShield(); // [2.0-s4e] barrier-up shimmer
     render(); startAnim();
-    flash(`✦ HIT! ${bossHitsLeft} to go · 🛡 shield up`);
+    flash(`HIT! ${bossHitsLeft} to go · shield up`);
     bossAttackTimers.push(setTimeout(_w2SpawnHitPlate, bossShieldUntil - Date.now()));
   }, 800));
 }
@@ -3270,7 +3280,7 @@ function _w2LaserSpin() { // [2.0-s4b][2.0-s4c][2.0-s4d] gated; ~0.8s charge tel
   if (!_w2PowerReady()) { bossAttackTimers.push(setTimeout(_w2LaserSpin, (_w2PowerBusyUntil - Date.now()) + 200 + Math.random()*400)); return; }
   const charge = 800, dur = 4500 / w2SpeedMult; // [2.0-s4c] ~40% slower → readable/dodgeable
   _w2PowerBusy(charge + dur);
-  flash('✦ LASER SPIN CHARGING!');
+  flash('LASER SPIN CHARGING!');
   const t0 = Date.now();
   w2SpinState = { chargeUntil: t0 + charge, start: t0 + charge, dur }; // [2.0-s4d] charge phase before lethal+rotating
   startAnim();
@@ -3283,7 +3293,7 @@ function _w2GravityPull() { // [2.0-s4b][2.0-s4d] gated; warn, then yank the pla
   const now = Date.now();
   const warn = 500 / w2SpeedMult;
   w2GravityWarn = { until: now + warn };
-  flash('✦ GRAVITY PULL!');
+  flash('GRAVITY PULL!');
   render(); startAnim();
   bossAttackTimers.push(setTimeout(() => {
     if (!alive || !bossRound || !w2Boss) return;
@@ -3336,7 +3346,7 @@ function _w2BlackHoleBlock() { // [2.0-s4f] gated; spawns 1–3 simultaneous bla
   if (!spawned.length) return;
   w2BhBlocks = spawned;
   _w2PowerBusy(5000);
-  flash('✦ BLACK HOLE!');
+  flash('BLACK HOLE!');
   for (const h of w2BhBlocks) _bhParticles(h.x, h.y, true);
   render(); startAnim();
   bossAttackTimers.push(setTimeout(() => { w2BhBlocks = []; if (alive && bossRound) render(); }, 5000));
@@ -3352,7 +3362,7 @@ function _w2FallingStar() { // [2.0-s4b][2.0-s4d] gated; longer streak → irreg
     ix = 2 + Math.floor(Math.random()*(N-4)); iy = 2 + Math.floor(Math.random()*(N-4));
     if (!bcells.has(`${ix},${iy}`)) break;
   }
-  flash('✦ FALLING STAR!');
+  flash('FALLING STAR!');
   w2Star = { sx: ix - 9, sy: iy - 15, ex: ix, ey: iy, born: Date.now(), landAt: Date.now() + 1100 }; // [2.0-s4d] longer streak
   startAnim();
   bossAttackTimers.push(setTimeout(() => {
@@ -3827,7 +3837,7 @@ function startRound() {
   if (gridlockActive) {
     gridlockRoundsLeft--;
     if (gridlockRoundsLeft <= 0) _endGridlockMode(true);
-    else if (hudGridlock) hudGridlock.textContent = `⚡ GRIDLOCK x${gridlockRoundsLeft}`;
+    else if (hudGridlockVal) hudGridlockVal.textContent = `GRIDLOCK x${gridlockRoundsLeft}`; // [2.0-deemoji]
   } else if (comboCount >= 20 && comboCount % 20 === 0 && !bossActive) {
     activateGridlockMode();
   }
@@ -3855,7 +3865,7 @@ function startRound() {
   const gapms  = GAP_MS  * speedMult;
   if (currentWorld === 2) { _flareChargeStart = Date.now(); _flareChargeDur = charge; } // [2.0-s2] solar flare charge anim
   render();
-  flash(`Round ${round}${hardMode?' 🔥':''} — dodge!`); // [1.9]
+  flash(`Round ${round}${hardMode?' (HARD)':''} — dodge!`); // [1.9]
   if (currentWorld === 2) playSolarFlareCharge(); else playSound('laser_charge'); // [2.0-s2]
 
   phaseTimer=_schedulePhase(()=>{ // [1.10.2]
@@ -3863,7 +3873,7 @@ function startRound() {
     if (!tFreeze) for (const L of lasers) L.state='fire';
     if (currentWorld === 2) { _flareFireStart = Date.now(); _flareFireDur = firems; } // [2.0-s2] solar flare release anim
     for (const b of blocks) { b.state='land'; spawnBlockImpact(b.x,b.y); }
-    render(); flash('⚡ FIRE!'); // [1.9]
+    render(); flash('FIRE!'); // [1.9]
     if (currentWorld === 2) playSolarFlareRelease(); else playSound('laser_fire'); // [2.0-s2]
     checkDeathByLaser(); checkDeathByBlock();
     phaseTimer=_schedulePhase(()=>{ // [1.10.2]
@@ -4016,7 +4026,7 @@ function _timeAttackOver() { // [1.10]
   alive = false; lastTime = (_virtMs() / 1000).toFixed(1); // [1.10.2-fix]
   clearTimeout(phaseTimer);
   _resetTesterSettings(); // [1.10.2]
-  if (hudTimerEl) { hudTimerEl.textContent = '⏱ 0s'; hudTimerEl.className = 'urgent'; }
+  if (hudTimerEl) { hudTimerVal.textContent = '0s'; hudTimerEl.classList.add('urgent'); } // [2.0-deemoji]
   const _newRecord = round > bestTimeAttack;
   if (_newRecord) { bestTimeAttack = round; localStorage.setItem('cm_best_timeattack', bestTimeAttack); }
   if (_newRecord) playRecord();
@@ -4027,12 +4037,12 @@ function _timeAttackOver() { // [1.10]
   if (titleEl) titleEl.textContent = "TIME'S UP!";
   setTimeout(() => {
     deathStats.innerHTML =
-      `⏱ Time Attack — 60 seconds<br>`+
-      `${bestComboThisSession >= 5 ? '🔥 Best combo: <b>x'+bestComboThisSession+'</b><br>' : ''}`+
+      `Time Attack — 60 seconds<br>`+ // [2.0-deemoji]
+      `${bestComboThisSession >= 5 ? 'Best combo: <b>x'+bestComboThisSession+'</b><br>' : ''}`+
       `<br>Rounds: <b><span id="_dr">0</span></b> &nbsp;|&nbsp; `+
       `<span style="color:#ffd700">🪙 +<span id="_dc">0</span></span><br>`+
       `Best (Time Attack): <b>${bestTimeAttack} rounds</b>`+
-      (_recBonus > 0 ? `<br><span class="record-bonus">🏆 NEW RECORD — 3× BONUS +${_recBonus} ${curIcon()}</span>` : ''); // [2.0-w1fix]
+      (_recBonus > 0 ? `<br><span class="record-bonus">NEW RECORD — 3× BONUS +${_recBonus} ${curIcon()}</span>` : ''); // [2.0-w1fix][2.0-deemoji]
     deathOverlay.classList.add('show');
     animateCounter('_dr', round, 520);
     animateCounter('_dc', sessionCoinsEarned, 520);
@@ -4107,18 +4117,20 @@ function die(reason) {
 
   setTimeout(()=>{
     deathStats.innerHTML = // [1.9.2]
-      `${reason==='block'?'🟧 Crushed by a block':reason==='asteroid'?'☄️ Smashed by an asteroid':currentWorld===2?'☀️ Burned by a Solar Flare':'💀 Hit by a laser'}<br>`+
+      // [2.0-deemoji] glyphs stripped — a dense 14px stat block reads cleaner as plain text.
+      // The Hard Mode flame stays (matches the HARD button); NEW BEST's star is a dingbat.
+      `${reason==='block'?'Crushed by a block':reason==='asteroid'?'Smashed by an asteroid':currentWorld===2?'Burned by a Solar Flare':'Hit by a laser'}<br>`+
       `${hardMode?'<span style="color:#ff6600">🔥 Hard Mode</span><br>':''}`+
-      `${bestComboThisSession >= 5 ? '🔥 Best combo: <b>x'+bestComboThisSession+'</b><br>' : ''}`+ // [1.9.2]
+      `${bestComboThisSession >= 5 ? 'Best combo: <b>x'+bestComboThisSession+'</b><br>' : ''}`+ // [1.9.2]
       `<br>Time: <b>${lastTime}s</b> &nbsp;|&nbsp; Rounds: <b><span id="_dr">0</span></b><br>`+ // [1.9.3]
       `<span style="color:#ffd700">${curIcon()} ${currentWorld===2?'Crystals':'Coins'} earned: <b>+<span id="_dc">0</span></b></span><br>`+ // [1.9.3][2.0-s1]
       `Best time: <b>${currentWorld===2?w2BestTime:bestTime}s</b> &nbsp;|&nbsp; Best rounds: <b>${currentWorld===2?w2BestRound:bestRound}</b>`+ // [2.0-s3] per world
       (_newRecord ? `<br><span class="new-best">★ NEW BEST!</span>` : '')+ // [1.9.3]
-      (_recBonus > 0 ? `<br><span class="record-bonus">🏆 NEW RECORD — 3× BONUS +${_recBonus} ${curIcon()}</span>` : '')+ // [2.0-w1fix]
+      (_recBonus > 0 ? `<br><span class="record-bonus">NEW RECORD — 3× BONUS +${_recBonus} ${curIcon()}</span>` : '')+ // [2.0-w1fix][2.0-deemoji]
       (gameMode==='timeattack' ? `<br>Best (Time Attack): <b>${bestTimeAttack} rounds</b>` : '')+ // [1.10]
       (gameMode==='hardcore'   ? `<br>Best (Hardcore): <b>${bestHardcore} rounds</b>` : '')+      // [1.10]
       (gameMode==='daily'      ? `<br>Best (Daily): <b>${bestDaily} rounds</b>` : '')+            // [1.10]
-      (newUnlock ? `<br><br><span style="color:#ffd700;font-size:15px">🏆 UNLOCKED: ${newUnlock.name}!</span>` : '');
+      (newUnlock ? `<br><br><span style="color:#ffd700;font-size:15px">UNLOCKED: ${newUnlock.name}!</span>` : ''); // [2.0-deemoji]
     deathOverlay.classList.add('show');
     animateCounter('_dr', round, 520);           // [1.9.3]
     animateCounter('_dc', currentWorld===2 ? sessionCrystalsEarned : sessionCoinsEarned, 520); // [1.9.3][2.0-s1]
@@ -4409,7 +4421,7 @@ function renderStats() { // [2.0-s3] fill the stat screen from the selected worl
   document.getElementById('st-time').textContent        = formatTimePlayed(w2 ? w2TimePlayed : statTimePlayed);
   document.getElementById('st-coins-total').textContent = fmtStat(w2 ? w2CrystalsTotal : statCoinsTotal);
   const _bc = w2 ? w2BestCombo : statBestCombo;
-  document.getElementById('st-best-combo').textContent  = _bc > 0 ? `🔥 x${fmtStat(_bc)}` : '—';
+  document.getElementById('st-best-combo').textContent  = _bc > 0 ? `x${fmtStat(_bc)}` : '—';
 }
 function formatTimePlayed(s) { // [1.9.2]
   const h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60);
@@ -4874,7 +4886,7 @@ function renderVoidOpener() {
   // Free box row
   const freeRow = document.createElement('div'); freeRow.className = 'void-open-row';
   const fInfo = document.createElement('div'); fInfo.className = 'void-open-info';
-  const fTitle = document.createElement('div'); fTitle.className = 'void-open-title'; fTitle.textContent = '🎁 FREE BOX';
+  const fTitle = document.createElement('div'); fTitle.className = 'void-open-title'; fTitle.textContent = 'FREE BOX';
   const fSub = document.createElement('div'); fSub.className = 'void-open-sub'; fSub.id = 'void-free-sub';
   fSub.textContent = freeAvail ? 'Available now — 1 per day' : `Next in ⏳ ${_fmtCountdown(_msUntilMidnight())}`;
   fInfo.append(fTitle, fSub);
@@ -4886,7 +4898,7 @@ function renderVoidOpener() {
   // Buy box row
   const buyRow = document.createElement('div'); buyRow.className = 'void-open-row';
   const bInfo = document.createElement('div'); bInfo.className = 'void-open-info';
-  const bTitle = document.createElement('div'); bTitle.className = 'void-open-title'; bTitle.textContent = '💎 BUY BOX';
+  const bTitle = document.createElement('div'); bTitle.className = 'void-open-title'; bTitle.textContent = 'BUY BOX';
   const bSub = document.createElement('div'); bSub.className = 'void-open-sub'; bSub.id = 'void-buy-sub';
   bSub.textContent = !canBuy ? 'Daily limit reached (2/2)' : !affordBuy ? `Not enough ✦ (need ${VOID_BOX_COST})` : `${boughtLeft} / 2 left today`;
   bInfo.append(bTitle, bSub);
@@ -5047,9 +5059,7 @@ function renderVoidCollection() {
         else if (cat==='board') drawBoardPreview(cv, item.id);
         else                    drawLaserPreview(cv, item.id);
       } else {
-        const c2 = cv.getContext('2d');
-        c2.fillStyle='#0a0a18'; c2.fillRect(0,0,38,38);
-        c2.fillStyle='#334'; c2.font='18px serif'; c2.textAlign='center'; c2.fillText('🔒',19,26);
+        _shopDrawLockTile(cv); // [2.0-deemoji] was an inlined copy of the same tile + a canvas lock glyph
       }
 
       const nm = document.createElement('div'); nm.className='skin-name'; nm.textContent = owned ? _voidItemName(item) : '???'; // [2.0-s5c] hide unearned item names
@@ -5059,6 +5069,7 @@ function renderVoidCollection() {
       else { pr.textContent=col.label; pr.style.color=col.glow; pr.style.fontSize='9px'; }
 
       card.append(cv,nm,pr);
+      if (!owned) card.appendChild(_shopLockOverlay()); // [2.0-deemoji] padlock over the blank tile
       if (owned) card.addEventListener('click', ()=>equipVoidItem(item));
       voidCollEl.appendChild(card);
     }
@@ -5112,7 +5123,7 @@ function startGame(hard = false, fromTester = false, custom = false, tutorial = 
   }
   if (gameMode === 'timeattack') {
     timeAttackEndTime = Date.now() + 60000;
-    if (hudTimerEl) { hudTimerEl.style.display = ''; hudTimerEl.textContent = '⏱ 60s'; }
+    if (hudTimerEl) { hudTimerEl.style.display = ''; hudTimerVal.textContent = '60s'; } // [2.0-deemoji]
   } else {
     if (hudTimerEl) hudTimerEl.style.display = 'none';
   }
@@ -5170,13 +5181,12 @@ function renderShop(){ // [1.9] tab-aware
 }
 
 // ── SHOP LOCK / UNLOCK VISUALS ── [2.0-w1fix]
-// Prestige items keep the old solid 🔒 tile (no preview). Ordinary unowned items now show a
-// greyed-out preview with a thin lock on top, which drops away when you buy them.
-function _shopDrawLockTile(cv) { // [2.0-w1fix] prestige tile — unchanged look, extracted so both tabs share it
+// Every locked item now wears the same SVG padlock overlay; what separates the two kinds is what
+// sits *under* it. Ordinary unowned items show their real preview, greyed. Prestige items show a
+// blank tile and a gold padlock — no preview at all, because you can't buy your way to them.
+function _shopDrawLockTile(cv) { // [2.0-w1fix] blank prestige tile — [2.0-deemoji] the lock is now a DOM overlay
   const c2 = cv.getContext('2d');
   c2.fillStyle = '#0a0a18'; c2.fillRect(0, 0, cv.width, cv.height);
-  c2.fillStyle = '#334'; c2.font = '18px serif'; c2.textAlign = 'center';
-  c2.fillText('🔒', cv.width / 2, cv.height * 0.684);
 }
 
 function _shopLockOverlay() { // [2.0-w1fix] thin outline padlock, same line-art style as the mode-card icons
@@ -5190,6 +5200,12 @@ function _shopLockOverlay() { // [2.0-w1fix] thin outline padlock, same line-art
 function _shopMarkLocked(card) { // [2.0-w1fix] affordable-or-not, it just isn't owned yet
   card.classList.add('shop-locked');
   card.appendChild(_shopLockOverlay());
+}
+
+function _shopMarkLockedPrestige(card) { // [2.0-deemoji] gold padlock over the blank tile
+  const lock = _shopLockOverlay();
+  lock.classList.add('prestige');
+  card.appendChild(lock);
 }
 
 function _shopPlayUnlockFx(card, kind, id) { // [2.0-w1fix] lock falls away, then the preview glows
@@ -5258,7 +5274,8 @@ function renderShopCubeTab() { // [1.9] extracted from old renderShop
       if (isLocked) pr.style.cssText='font-size:9px;color:#664;text-align:center;line-height:1.3;';
 
       card.append(cv,nm,pr);
-      if (!isLocked) { // [2.0-w1fix] ordinary items: greyed preview + thin lock instead of the prestige tile
+      if (isLocked) _shopMarkLockedPrestige(card); // [2.0-deemoji] gold padlock over the blank tile
+      else { // [2.0-w1fix] ordinary items: greyed preview + thin lock instead of the prestige tile
         if (!isOwned) _shopMarkLocked(card);
         card.addEventListener('click',()=>buySkin(s.id, card));
         _shopPlayUnlockFx(card, 'skin', s.id);
@@ -5316,14 +5333,18 @@ function renderShopBLTab() { // [1.9] board skins + laser colors tab
     pr.className = 'skin-price' + (isOwned||isActive?' owned':'');
     if (isActive)           pr.textContent = '✓ Active';
     else if (isOwned)       pr.textContent = 'Equip';
-    else if (isVoid)        pr.textContent = '🔒 Loot box'; // [2.0-s5b] only obtainable via loot box
+    else if (isVoid)        pr.textContent = 'Loot box'; // [2.0-s5b] only obtainable via loot box
     else if (isLocked)    { pr.textContent = def.unlockDesc; pr.style.cssText='font-size:9px;color:#664;text-align:center;line-height:1.3;'; } // [2.0-w1fix]
     else if (def.price===0) pr.textContent = 'Free';
     else                    pr.textContent = `${def.price} 🪙`;
 
     card.append(cv,nm,pr);
-    if (isVoid) card.addEventListener('click', ()=>buyBoardSkinW2(def.id));
-    else if (!isLocked) { // [2.0-w1fix] World 1 board skins are buyable again
+    if (isVoid) {
+      if (!isOwned) card.appendChild(_shopLockOverlay()); // [2.0-deemoji] padlock replaces the lock glyph in the price text
+      card.addEventListener('click', ()=>buyBoardSkinW2(def.id));
+    }
+    else if (isLocked) _shopMarkLockedPrestige(card); // [2.0-deemoji] Prestige Gold
+    else { // [2.0-w1fix] World 1 board skins are buyable again
       if (!isOwned) _shopMarkLocked(card);
       card.addEventListener('click', ()=>buyBoardSkin(def.id, card));
       _shopPlayUnlockFx(card, 'board', def.id);
@@ -5360,12 +5381,13 @@ function renderShopBLTab() { // [1.9] board skins + laser colors tab
     pr.className = 'skin-price' + (isOwned||isActive?' owned':'');
     if (isActive)       pr.textContent = '✓ Active';
     else if (isOwned)   pr.textContent = 'Equip';
-    else if (isVoid)    pr.textContent = '🔒 Loot box'; // [2.0-s5b] only obtainable via loot box
+    else if (isVoid)    pr.textContent = 'Loot box'; // [2.0-s5b] only obtainable via loot box
     else if (def.price===0) pr.textContent = 'Free';
     else                pr.textContent = `${def.price} 🪙`;
 
     card.append(cv,nm,pr);
-    if (!isVoid && !isOwned) _shopMarkLocked(card); // [2.0-w1fix] W1 lasers get the same locked treatment
+    if (!isVoid && !isOwned)     _shopMarkLocked(card); // [2.0-w1fix] W1 lasers get the same locked treatment
+    else if (isVoid && !isOwned) card.appendChild(_shopLockOverlay()); // [2.0-deemoji] padlock replaces the lock glyph in the price text
     card.addEventListener('click', ()=>buyLaserFn(def.id, card));
     if (!isVoid) _shopPlayUnlockFx(card, 'laser', def.id); // [2.0-w1fix]
     shopGridBL.appendChild(card);
@@ -5628,8 +5650,8 @@ function renderMissions() {
   const barM  = document.getElementById('bar-missions');
   badge.className = wt === 'luckiest' ? 'luckiest' : wt === 'lucky' ? 'lucky' : '';
   if (barM) barM.className = `menu-bar-btn${wt==='luckiest'?' luckiest':wt==='lucky'?' lucky':''}`;
-  if (wt==='luckiest')     badge.textContent = 'Luckiest Day 🌈'; // [2.0-s4] daily
-  else if (wt==='lucky')   badge.textContent = 'Lucky Day ✨'; // [2.0-s4] daily
+  if (wt==='luckiest')     badge.textContent = 'Luckiest Day';   // [2.0-deemoji] // [2.0-s4] daily
+  else if (wt==='lucky')   badge.textContent = 'Lucky Day';      // [2.0-deemoji] // [2.0-s4] daily
   else                     badge.textContent = 'Normal Day'; // [2.0-s4] daily
 
   document.getElementById('missions-timer').textContent = mTimerStr();

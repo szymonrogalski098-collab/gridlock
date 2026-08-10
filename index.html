@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
 <title>Gridlock</title><!-- [1.9.1] renamed -->
-<link rel="stylesheet" href="cube_master.css?v=2.0-w1fix">
+<link rel="stylesheet" href="cube_master.css?v=2.0-deemoji">
 </head>
 <body>
 <div id="intro-overlay"></div>
@@ -22,31 +22,41 @@
     <button class="menu-btn menu-btn-hard"   id="btn-hard"  style="width:100%;">
       🔥 HARD <span class="menu-btn-desc">1.6× faster · +3 🪙</span><!-- [1.9.1] updated multiplier -->
     </button>
-    <button class="menu-btn menu-btn-modes" id="btn-modes" style="width:100%;">🎮 MODES</button><!-- [1.10] -->
-    <button class="menu-btn menu-btn-tutorial" id="btn-tutorial" style="width:100%;">📖 TUTORIAL</button>
+    <button class="menu-btn menu-btn-modes" id="btn-modes" style="width:100%;"><svg class="ui-ico ui-ico-lead" viewBox="0 0 24 24"><!-- [2.0-deemoji] gamepad --><rect x="2.2" y="7.4" width="19.6" height="9.2" rx="4.6"/><line x1="7.4" y1="10.4" x2="7.4" y2="13.6"/><line x1="5.8" y1="12" x2="9" y2="12"/><circle cx="16.2" cy="11.2" r=".95"/><circle cx="18.4" cy="13.4" r=".95"/></svg>MODES</button><!-- [1.10] -->
+    <button class="menu-btn menu-btn-tutorial" id="btn-tutorial" style="width:100%;"><svg class="ui-ico ui-ico-lead" viewBox="0 0 24 24"><!-- [2.0-deemoji] open book --><path d="M12 6.6C10.3 5.2 8.2 4.5 5.4 4.5H2.8v13.4h2.6c2.8 0 4.9.7 6.6 2.1"/><path d="M12 6.6c1.7-1.4 3.8-2.1 6.6-2.1h2.6v13.4h-2.6c-2.8 0-4.9.7-6.6 2.1"/><line x1="12" y1="6.6" x2="12" y2="20"/></svg>TUTORIAL</button>
     <button class="menu-btn" id="btn-world-switch" style="width:100%;display:none">✦ SWITCH WORLD</button><!-- [2.0-s1] -->
   </div>
 
   <!-- BOTTOM BAR: secondary navigation --> <!-- [1.9.1] translated -->
   <div id="menu-bar">
     <button class="menu-bar-btn" id="bar-missions">
-      <span class="menu-bar-icon">📋</span>
+      <span class="menu-bar-icon"><!-- [2.0-deemoji] clipboard -->
+        <svg viewBox="0 0 24 24"><path d="M9 4.5H6.5A1.5 1.5 0 0 0 5 6v13.5A1.5 1.5 0 0 0 6.5 21h11a1.5 1.5 0 0 0 1.5-1.5V6a1.5 1.5 0 0 0-1.5-1.5H15"/><rect x="9" y="2.6" width="6" height="3.8" rx="1.2"/><line x1="8.5" y1="11" x2="15.5" y2="11"/><line x1="8.5" y1="14.5" x2="15.5" y2="14.5"/><line x1="8.5" y1="18" x2="13" y2="18"/></svg>
+      </span>
       <span class="menu-bar-label">MISSIONS</span><!-- [1.9] -->
     </button>
     <button class="menu-bar-btn" id="bar-shop">
-      <span class="menu-bar-icon">🛒</span>
+      <span class="menu-bar-icon"><!-- [2.0-deemoji] cart -->
+        <svg viewBox="0 0 24 24"><path d="M2.6 3.4h2.6l2.4 11h9.8l2-7.4H6.2"/><circle cx="9.2" cy="19" r="1.5"/><circle cx="16.6" cy="19" r="1.5"/></svg>
+      </span>
       <span class="menu-bar-label">SHOP</span><!-- [1.9] -->
     </button>
     <button class="menu-bar-btn" id="bar-stats">
-      <span class="menu-bar-icon">📊</span>
+      <span class="menu-bar-icon"><!-- [2.0-deemoji] bar chart -->
+        <svg viewBox="0 0 24 24"><line x1="3.4" y1="20.4" x2="20.6" y2="20.4"/><line x1="7" y1="20.4" x2="7" y2="13"/><line x1="12" y1="20.4" x2="12" y2="7.5"/><line x1="17" y1="20.4" x2="17" y2="10.5"/></svg>
+      </span>
       <span class="menu-bar-label">STATS</span><!-- [1.9] -->
     </button>
     <button class="menu-bar-btn" id="bar-tester">
-      <span class="menu-bar-icon">⚙️</span>
+      <span class="menu-bar-icon"><!-- [2.0-deemoji] gear -->
+        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="6.2"/><circle cx="12" cy="12" r="2.5"/><path d="M18.2 12h2.4M3.4 12h2.4M12 18.2v2.4M12 3.4v2.4M16.4 16.4l1.7 1.7M5.9 5.9l1.7 1.7M7.6 16.4l-1.7 1.7M18.1 5.9l-1.7 1.7"/></svg>
+      </span>
       <span class="menu-bar-label">TESTER</span>
     </button>
     <button class="menu-bar-btn" id="bar-reset">
-      <span class="menu-bar-icon">🗑️</span>
+      <span class="menu-bar-icon"><!-- [2.0-deemoji] trash -->
+        <svg viewBox="0 0 24 24"><line x1="3.6" y1="6.2" x2="20.4" y2="6.2"/><path d="M5.9 6.2h12.2l-.9 13a1.5 1.5 0 0 1-1.5 1.4H8.3a1.5 1.5 0 0 1-1.5-1.4Z"/><path d="M9.3 6.2V4.4a1.4 1.4 0 0 1 1.4-1.4h2.6a1.4 1.4 0 0 1 1.4 1.4v1.8"/><line x1="10.4" y1="10.2" x2="10.4" y2="16.8"/><line x1="13.6" y1="10.2" x2="13.6" y2="16.8"/></svg>
+      </span>
       <span class="menu-bar-label">RESET</span>
     </button>
   </div>
@@ -54,7 +64,7 @@
 
 <!-- PIN SCREEN --> <!-- [1.9.1] translated -->
 <div id="screen-pin" class="screen-base">
-  <div id="pin-title">⚙ ACCESS CODE</div><!-- [1.9] -->
+  <div id="pin-title"><svg class="ui-ico ui-ico-lead" viewBox="0 0 24 24"><!-- [2.0-deemoji] padlock, same shape as the shop lock --><rect x="5" y="10.5" width="14" height="10" rx="2"/><path d="M8.2 10.5V7.8a3.8 3.8 0 0 1 7.6 0v2.7"/><circle cx="12" cy="15.5" r="1.3"/></svg>ACCESS CODE</div><!-- [1.9] -->
   <div id="pin-display">____</div>
   <div id="pin-pad">
     <button class="pin-btn" data-v="1">1</button>
@@ -77,7 +87,7 @@
 
 <!-- STATISTICS SCREEN --> <!-- [1.9.1] translated -->
 <div id="screen-stats" class="screen-base">
-  <h2>📊 STATISTICS</h2><!-- [1.9] -->
+  <h2><svg class="ui-ico ui-ico-lead" viewBox="0 0 24 24"><!-- [2.0-deemoji] bar chart --><line x1="3.4" y1="20.4" x2="20.6" y2="20.4"/><line x1="7" y1="20.4" x2="7" y2="13"/><line x1="12" y1="20.4" x2="12" y2="7.5"/><line x1="17" y1="20.4" x2="17" y2="10.5"/></svg>STATISTICS</h2><!-- [1.9] -->
   <div id="stats-tabs"><!-- [2.0-s3] -->
     <button class="stats-tab active" id="stats-tab-w1">⚡ WORLD 1</button>
     <button class="stats-tab" id="stats-tab-w2">✦ WORLD 2</button>
@@ -128,13 +138,13 @@
 <!-- MISSIONS SCREEN --> <!-- [1.9.1] translated -->
 <div id="screen-missions" class="screen-base">
   <div id="missions-header">
-    <div id="missions-title">📋 MISSIONS</div><!-- [1.9] -->
+    <div id="missions-title"><svg class="ui-ico ui-ico-lead" viewBox="0 0 24 24"><!-- [2.0-deemoji] clipboard --><path d="M9 4.5H6.5A1.5 1.5 0 0 0 5 6v13.5A1.5 1.5 0 0 0 6.5 21h11a1.5 1.5 0 0 0 1.5-1.5V6a1.5 1.5 0 0 0-1.5-1.5H15"/><rect x="9" y="2.6" width="6" height="3.8" rx="1.2"/><line x1="8.5" y1="11" x2="15.5" y2="11"/><line x1="8.5" y1="14.5" x2="15.5" y2="14.5"/><line x1="8.5" y1="18" x2="13" y2="18"/></svg>MISSIONS</div><!-- [1.9] -->
     <div id="missions-week-badge">Normal Day</div><!-- [2.0-s4] daily -->
   </div>
   <div id="missions-timer">Loading...</div><!-- [1.9] -->
   <div id="missions-list"></div>
   <div id="missions-bonus-card">
-    <div id="missions-bonus-title">🏆 BONUS FOR ALL MISSIONS</div><!-- [1.9] -->
+    <div id="missions-bonus-title"><svg class="ui-ico ui-ico-lead" viewBox="0 0 24 24"><!-- [2.0-deemoji] trophy --><path d="M7.6 3.4h8.8v5.2a4.4 4.4 0 0 1-8.8 0Z"/><path d="M7.6 4.8H4.9v1.9a3.2 3.2 0 0 0 3 3.2"/><path d="M16.4 4.8h2.7v1.9a3.2 3.2 0 0 1-3 3.2"/><line x1="12" y1="13" x2="12" y2="17"/><path d="M8.6 20.6h6.8l-.7-3.6H9.3Z"/></svg>BONUS FOR ALL MISSIONS</div><!-- [1.9] -->
     <div id="missions-bonus-desc">Complete all 3 missions</div><!-- [1.9] -->
     <button id="missions-bonus-btn" disabled>CLAIM BONUS</button><!-- [1.9] -->
   </div>
@@ -211,7 +221,7 @@
   background:rgba(0,0,0,.85);z-index:100;display:flex;flex-direction:column;
   align-items:center;justify-content:center;gap:16px;
   visibility:hidden;pointer-events:none;">
-  <div style="font-size:16px;color:#ff4444;letter-spacing:2px;">🗑 RESET DATA</div><!-- [1.9] -->
+  <div style="font-size:16px;color:#ff4444;letter-spacing:2px;"><svg class="ui-ico ui-ico-lead" viewBox="0 0 24 24"><!-- [2.0-deemoji] trash --><line x1="3.6" y1="6.2" x2="20.4" y2="6.2"/><path d="M5.9 6.2h12.2l-.9 13a1.5 1.5 0 0 1-1.5 1.4H8.3a1.5 1.5 0 0 1-1.5-1.4Z"/><path d="M9.3 6.2V4.4a1.4 1.4 0 0 1 1.4-1.4h2.6a1.4 1.4 0 0 1 1.4 1.4v1.8"/><line x1="10.4" y1="10.2" x2="10.4" y2="16.8"/><line x1="13.6" y1="10.2" x2="13.6" y2="16.8"/></svg>RESET DATA</div><!-- [1.9] -->
   <div style="font-size:13px;color:#88aacc;text-align:center;max-width:260px;line-height:1.6;">
     Delete all coins, skins and statistics?<br>This cannot be undone.<!-- [1.9] -->
   </div>
@@ -230,11 +240,14 @@
   <div id="hud">
     <div id="hud-coins">🪙 0</div>
     <div id="hud-info">Round 0 · 0.0s</div><!-- [1.9] -->
-    <div id="hud-dash">⚡ –</div>
-    <div id="hud-blackhole" style="display:none"></div><!-- [2.0-s2] -->
-    <div id="hud-timer" style="display:none"></div><!-- [1.10] -->
-    <div id="hud-combo" style="display:none"></div><!-- [1.9.2] -->
-    <div id="hud-gridlock" style="display:none"></div><!-- [1.12] -->
+    <!-- [2.0-deemoji] HUD icons are static SVG + a value span, so the 100ms HUD tick only
+         writes text and never re-parses markup. stroke:currentColor makes each icon follow
+         its element's state colour (.urgent, .bh-ready, .bh-cooldown, body.world2). -->
+    <div id="hud-dash"><svg class="hud-ico" viewBox="0 0 24 24"><!-- bolt --><path d="M13.4 2.2 4.8 13.6h5.6l-.8 8.2 8.6-11.4h-5.6Z"/></svg> <span id="hud-dash-val">–</span></div>
+    <div id="hud-blackhole" style="display:none"><svg class="hud-ico" viewBox="0 0 24 24"><!-- singularity --><ellipse cx="12" cy="12" rx="9.6" ry="4.4"/><circle cx="12" cy="12" r="2.9"/></svg> <span id="hud-blackhole-val"></span></div><!-- [2.0-s2] -->
+    <div id="hud-timer" style="display:none"><svg class="hud-ico" viewBox="0 0 24 24"><!-- stopwatch --><circle cx="12" cy="13.5" r="7.5"/><polyline points="12,9 12,13.5 15,15.5"/><line x1="9.5" y1="2.5" x2="14.5" y2="2.5"/><line x1="12" y1="2.5" x2="12" y2="6"/></svg> <span id="hud-timer-val"></span></div><!-- [1.10] -->
+    <div id="hud-combo" style="display:none"><svg class="hud-ico" viewBox="0 0 24 24"><!-- flame --><path d="M12 21.4c3.5 0 6-2.4 6-5.6 0-4.4-4.3-6-4.3-9.6 0-1.3.5-2.4 1.1-3.2-4 .9-7.3 4.3-7.3 8.6 0 1.7.7 3 .7 4.1 0 1-.7 1.7-1.5 1.7 0 2.3 2.3 4 5.3 4Z"/></svg> <span id="hud-combo-val"></span></div><!-- [1.9.2] -->
+    <div id="hud-gridlock" style="display:none"><svg class="hud-ico" viewBox="0 0 24 24"><!-- bolt --><path d="M13.4 2.2 4.8 13.6h5.6l-.8 8.2 8.6-11.4h-5.6Z"/></svg> <span id="hud-gridlock-val"></span></div><!-- [1.12] -->
     <div id="hud-fps"></div>
   </div>
   <div id="board-wrap">
@@ -310,6 +323,6 @@
   <button id="void-reveal-ok">CONTINUE</button>
 </div>
 
-<script src="cube_master.js?v=2.0-w1fix"></script>
+<script src="cube_master.js?v=2.0-deemoji"></script>
 </body>
 </html>
