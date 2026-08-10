@@ -216,6 +216,42 @@ html,body { height:100%; width:100%; overflow:hidden; overscroll-behavior:none;
   padding:5px 12px; border-radius:20px; backdrop-filter:blur(8px);
   transition:transform .2s; }
 #menu-coins.bump { animation:coin-bump .3s ease; }
+
+/* [2.0-capybara] Idle-menu easter egg. Container is pointer-events:none so it can
+   never block a real menu button; only .capybara-bubble (the clickable part) opts
+   back in. z-index sits above menu-coins (60) but far below the tester FAB (9999),
+   since the two never need to fight — the FAB is bottom-right, this is top-left. */
+.capybara-egg { position:fixed; top:14px; left:14px; z-index:200;
+  pointer-events:none; opacity:0; visibility:hidden;
+  display:flex; align-items:flex-start;
+  transition:opacity .22s ease, visibility 0s linear .22s; }
+.capybara-egg.show { opacity:1; visibility:visible; transition:opacity .22s ease; }
+.capybara-sprite { width:54px; height:30px; image-rendering:pixelated;
+  filter:drop-shadow(0 2px 5px rgba(0,0,0,.5)); flex-shrink:0; }
+.capybara-egg.show .capybara-sprite { animation:capy-pop .38s cubic-bezier(.34,1.56,.64,1) both; }
+@keyframes capy-pop {
+  0%   { transform:rotate(70deg) scale(.25) translate(-10px,6px); opacity:0; }
+  60%  { transform:rotate(70deg) scale(1.1)  translate(0,0);      opacity:1; }
+  100% { transform:rotate(70deg) scale(1)    translate(0,0);      opacity:1; }
+}
+.capybara-bubble { pointer-events:auto; cursor:pointer; position:relative;
+  margin:0 0 0 8px; max-width:160px; align-self:center;
+  background:rgba(15,15,34,.92); border:1.5px solid rgba(0,200,255,.5);
+  border-radius:12px; padding:8px 12px; color:#cdeeff; font-family:inherit;
+  font-size:11px; line-height:1.4; letter-spacing:.2px;
+  box-shadow:0 0 14px rgba(0,180,255,.2); backdrop-filter:blur(4px);
+  transition:transform .12s, border-color .12s; }
+.capybara-bubble:hover  { transform:scale(1.04); border-color:#0cf; }
+.capybara-bubble:active { transform:scale(.97); }
+.capybara-bubble::before, .capybara-bubble::after { content:''; position:absolute;
+  top:12px; border:7px solid transparent; }
+.capybara-bubble::after  { left:-14px; border-right-color:rgba(0,200,255,.5); }
+.capybara-bubble::before { left:-11px; border-right-color:rgba(15,15,34,.92); z-index:1; }
+body.world2 .capybara-bubble { background:rgba(20,8,40,.92); border-color:rgba(204,136,255,.55); color:#e8d4ff; }
+body.world2 .capybara-bubble:hover { border-color:#cc88ff; }
+body.world2 .capybara-bubble::after  { border-right-color:rgba(204,136,255,.55); }
+body.world2 .capybara-bubble::before { border-right-color:rgba(20,8,40,.92); }
+
 @keyframes coin-bump {
   0%  { transform:scale(1); }
   50% { transform:scale(1.25); color:#fff; }

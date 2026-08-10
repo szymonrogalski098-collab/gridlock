@@ -339,3 +339,20 @@ function playUISound(type){ // [1.9.2] enhanced
     }
   } catch(e){}
 }
+
+function playCapybaraPop() { // [2.0-capybara] cute upward "boop" — the idle easter egg popping up
+  try {
+    const ac=getAudio(), now=ac.currentTime;
+    const o=ac.createOscillator(), g=ac.createGain();
+    o.type='sine'; o.frequency.setValueAtTime(260,now); o.frequency.exponentialRampToValueAtTime(720,now+0.11);
+    g.gain.setValueAtTime(0.001,now); g.gain.exponentialRampToValueAtTime(0.16,now+0.03);
+    g.gain.exponentialRampToValueAtTime(0.001,now+0.22);
+    o.connect(g); g.connect(ac.destination); o.start(); o.stop(now+0.22);
+    // soft second voice a fifth above, slightly delayed, rounds the "boop" out
+    const o2=ac.createOscillator(), g2=ac.createGain();
+    o2.type='sine'; o2.frequency.setValueAtTime(390,now+0.02); o2.frequency.exponentialRampToValueAtTime(880,now+0.14);
+    g2.gain.setValueAtTime(0.001,now+0.02); g2.gain.exponentialRampToValueAtTime(0.09,now+0.05);
+    g2.gain.exponentialRampToValueAtTime(0.001,now+0.24);
+    o2.connect(g2); g2.connect(ac.destination); o2.start(now+0.02); o2.stop(now+0.24);
+  } catch(e){}
+}

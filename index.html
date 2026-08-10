@@ -4,12 +4,19 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
 <title>Gridlock</title><!-- [1.9.1] renamed -->
-<link rel="stylesheet" href="cube_master.css?v=2.0-mod3">
+<link rel="stylesheet" href="cube_master.css?v=2.0-capybara">
 </head>
 <body>
 <div id="intro-overlay"></div>
 <canvas id="bg-canvas"></canvas>
 <div id="menu-coins">🪙 0</div>
+<!-- [2.0-capybara] Idle-menu easter egg — hidden by default, shown only by js/capybara.js
+     while #screen-start is the active screen. Fixed + independent of screen-start's own
+     stacking so it can be driven purely from JS regardless of which screen is on top. -->
+<div id="capybara-egg" class="capybara-egg" style="display:none">
+  <canvas id="capybara-sprite" class="capybara-sprite" width="18" height="10"></canvas>
+  <div id="capybara-bubble" class="capybara-bubble"></div>
+</div>
 
 <!-- MAIN MENU --> <!-- [1.9.1] translated -->
 <div id="screen-start" class="screen-base">
@@ -333,7 +340,7 @@
 <script src="js/dom.js?v=2.0-mod3"></script>
 <script src="js/persistence.js?v=2.0-mod3"></script>
 <script src="js/skins.js?v=2.0-mod3"></script>
-<script src="js/sound.js?v=2.0-mod3"></script>
+<script src="js/sound.js?v=2.0-capybara"></script>
 <script src="js/board-render.js?v=2.0-mod3"></script>
 <script src="js/hazards.js?v=2.0-mod3"></script>
 <script src="js/rounds.js?v=2.0-mod3"></script>
@@ -345,6 +352,7 @@
 <script src="js/lootbox.js?v=2.0-mod3"></script>
 <script src="js/missions.js?v=2.0-mod3"></script>
 <script src="js/tutorial.js?v=2.0-mod3"></script>
+<script src="js/capybara.js?v=2.0-capybara"></script>
 <script src="js/main.js?v=2.0-mod3"></script>
 </body>
 </html>
