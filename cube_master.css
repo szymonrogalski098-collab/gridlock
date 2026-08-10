@@ -746,7 +746,11 @@ body.world2 #tut-coach { border-color:rgba(204,136,255,.55); color:#d8a8ff;
   0%,100% { transform:translateX(-50%) translateY(0); }
   50%      { transform:translateX(-50%) translateY(-3px); }
 }
-#tut-skip { position:absolute; top:10px; right:10px; z-index:31;
+/* [2.0-tutfix] Sits BELOW the coin pill, not under it. #menu-coins is a fixed body child
+   at top:16 right:16 with z-index:60, so the old top:10/right:10/z-index:31 put Skip
+   directly underneath it - visible but unclickable. top:56 clears the pill's bottom edge
+   (16 + ~27), and the raised z-index keeps Skip reachable if the pill ever grows taller. */
+#tut-skip { position:absolute; top:56px; right:14px; z-index:61;
   background:rgba(10,10,24,.8); border:1px solid #1a2a3a; color:#88aacc;
   font-family:inherit; font-size:11px; font-weight:bold; letter-spacing:1px;
   padding:7px 13px; border-radius:8px; cursor:pointer;
