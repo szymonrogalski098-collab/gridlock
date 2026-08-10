@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
 <title>Gridlock</title><!-- [1.9.1] renamed -->
-<link rel="stylesheet" href="cube_master.css">
+<link rel="stylesheet" href="cube_master.css?v=2.0-s5c.2">
 </head>
 <body>
 <div id="intro-overlay"></div>
@@ -14,7 +14,7 @@
 <!-- MAIN MENU --> <!-- [1.9.1] translated -->
 <div id="screen-start" class="screen-base">
   <div id="menu-title">Gridlock<br></div>
-  <div id="menu-sub">v1.9.3</div><!-- [1.9.2] version bump -->
+  <div id="menu-sub">v1.11</div><!-- [1.10] version bump -->
 
   <!-- CENTER: main game buttons --> <!-- [1.9.1] translated -->
   <div id="menu-center">
@@ -22,7 +22,9 @@
     <button class="menu-btn menu-btn-hard"   id="btn-hard"  style="width:100%;">
       🔥 HARD <span class="menu-btn-desc">1.6× faster · +3 🪙</span><!-- [1.9.1] updated multiplier -->
     </button>
+    <button class="menu-btn menu-btn-modes" id="btn-modes" style="width:100%;">🎮 MODES</button><!-- [1.10] -->
     <button class="menu-btn menu-btn-tutorial" id="btn-tutorial" style="width:100%;">📖 TUTORIAL</button>
+    <button class="menu-btn" id="btn-world-switch" style="width:100%;display:none">✦ SWITCH WORLD</button><!-- [2.0-s1] -->
   </div>
 
   <!-- BOTTOM BAR: secondary navigation --> <!-- [1.9.1] translated -->
@@ -72,89 +74,16 @@
   <button id="pin-back">← BACK</button><!-- [1.9] -->
 </div>
 
-<!-- TESTER SCREEN --> <!-- [1.9.1] translated -->
-<div id="screen-tester" class="screen-base">
-  <div id="tester-title">⚙ TESTER MODE</div><!-- [1.9] -->
-  <div id="tester-scroll">
-
-    <!-- SECTION: GAME --> <!-- [1.9.1] translated -->
-    <div class="tester-section-title">🎮 GAME</div><!-- [1.9] -->
-    <div id="tester-list">
-      <div class="tester-row">
-        <span class="tester-label">💀 Noclip (invincibility)</span><!-- [1.9] -->
-        <button class="tester-toggle" id="tog-noclip">OFF</button>
-      </div>
-      <div class="tester-row">
-        <span class="tester-label">⚡ Infinite Dashes</span><!-- [1.9] -->
-        <button class="tester-toggle" id="tog-dashinf">OFF</button>
-      </div>
-      <div class="tester-row">
-        <span class="tester-label">🐢 Slow mode (25%)</span><!-- [1.9] -->
-        <button class="tester-toggle" id="tog-slow">OFF</button>
-      </div>
-      <div class="tester-row">
-        <span class="tester-label">❄️ Freeze lasers</span><!-- [1.9] -->
-        <button class="tester-toggle" id="tog-freeze">OFF</button>
-      </div>
-      <div class="tester-row">
-        <span class="tester-label">📊 FPS counter in HUD</span><!-- [1.9] -->
-        <button class="tester-toggle" id="tog-fps">OFF</button>
-      </div>
-      <div class="tester-row">
-        <span class="tester-label">⏭ Start from round</span><!-- [1.9] -->
-        <input class="tester-input" id="inp-round" type="number" min="1" max="999" value="1">
-      </div>
-    </div>
-
-    <!-- SECTION: IN-GAME ACTIONS --> <!-- [1.9.1] translated -->
-    <div class="tester-section-title">⚡ IN-GAME ACTIONS</div><!-- [1.9] -->
-    <div class="tester-actions">
-      <button class="tester-action-btn" id="act-die">💀 Trigger death</button><!-- [1.9] -->
-      <button class="tester-action-btn" id="act-next-round">⏭ Next round</button><!-- [1.9] -->
-    </div>
-
-    <!-- SECTION: MISSIONS --> <!-- [1.9.1] translated -->
-    <div class="tester-section-title">📋 MISSIONS</div><!-- [1.9] -->
-    <div class="tester-actions">
-      <button class="tester-action-btn tester-action-week" id="act-week-normal">📅 Normal week</button><!-- [1.9] -->
-      <button class="tester-action-btn tester-action-lucky" id="act-week-lucky">✨ Lucky week</button><!-- [1.9] -->
-      <button class="tester-action-btn tester-action-luckiest" id="act-week-luckiest">🌈 Luckiest week</button><!-- [1.9] -->
-      <button class="tester-action-btn" id="act-complete-missions">✅ Complete all missions</button><!-- [1.9] -->
-      <button class="tester-action-btn" id="act-reset-missions">🔄 New random missions</button><!-- [1.9] -->
-    </div>
-
-    <!-- SECTION: SKINS --> <!-- [1.9.1] translated -->
-    <div class="tester-section-title">🎨 SKINS</div><!-- [1.9] -->
-    <div class="tester-actions">
-      <button class="tester-action-btn" id="act-unlock-prestige">🏆 Unlock prestige skins</button><!-- [1.9] -->
-      <button class="tester-action-btn" id="act-unlock-all">🔓 Unlock all skins</button><!-- [1.9] -->
-    </div>
-
-    <!-- SECTION: DATA --> <!-- [1.9.1] translated -->
-    <div class="tester-section-title">💾 DATA</div><!-- [1.9] -->
-    <div class="tester-row" style="margin-bottom:6px;">
-      <span class="tester-label">🪙 Set coins</span><!-- [1.9] -->
-      <div style="display:flex;gap:6px;align-items:center;">
-        <input class="tester-input" id="inp-coins" type="number" min="0" max="999999" value="1000">
-        <button class="tester-toggle" id="act-set-coins" style="padding:4px 8px;">SET</button>
-      </div>
-    </div>
-
-    <!-- PLAY + RESET -->
-    <div id="tester-play">
-      <button class="menu-btn menu-btn-normal" style="width:100%;font-size:14px;" id="btn-tester-play">▶ PLAY WITH SETTINGS</button><!-- [1.9] -->
-    </div>
-    <button id="tester-reset-btn">🗑 RESET ALL DATA</button><!-- [1.9] -->
-    <button id="tester-close-btn">← BACK TO MENU</button><!-- [1.9] -->
-
-  </div><!-- /tester-scroll -->
-</div>
 
 <!-- STATISTICS SCREEN --> <!-- [1.9.1] translated -->
 <div id="screen-stats" class="screen-base">
   <h2>📊 STATISTICS</h2><!-- [1.9] -->
+  <div id="stats-tabs"><!-- [2.0-s3] -->
+    <button class="stats-tab active" id="stats-tab-w1">⚡ WORLD 1</button>
+    <button class="stats-tab" id="stats-tab-w2">✦ WORLD 2</button>
+  </div>
   <div id="stats-coins-row">
-    <div class="stat-coins-lbl">WALLET</div><!-- [1.9] -->
+    <div class="stat-coins-lbl" id="st-coins-lbl">WALLET</div><!-- [1.9] -->
     <div class="stat-coins-val" id="st-coins">0 🪙</div>
   </div>
   <div id="stats-grid">
@@ -178,7 +107,7 @@
   <div id="stats-grid-2"><!-- [1.9.2] -->
     <div class="stat-box">
       <div class="stat-val" id="st-lasers">0</div>
-      <div class="stat-lbl">LASERS DODGED</div>
+      <div class="stat-lbl" id="st-lasers-lbl">LASERS DODGED</div><!-- [2.0-s3] -->
     </div>
     <div class="stat-box">
       <div class="stat-val" id="st-time">0m</div>
@@ -186,7 +115,7 @@
     </div>
     <div class="stat-box">
       <div class="stat-val" id="st-coins-total">0</div>
-      <div class="stat-lbl">COINS EARNED</div>
+      <div class="stat-lbl" id="st-coins-total-lbl">COINS EARNED</div><!-- [2.0-s3] -->
     </div>
     <div class="stat-box">
       <div class="stat-val" id="st-best-combo">—</div>
@@ -200,7 +129,7 @@
 <div id="screen-missions" class="screen-base">
   <div id="missions-header">
     <div id="missions-title">📋 MISSIONS</div><!-- [1.9] -->
-    <div id="missions-week-badge">Normal Week</div><!-- [1.9] -->
+    <div id="missions-week-badge">Normal Day</div><!-- [2.0-s4] daily -->
   </div>
   <div id="missions-timer">Loading...</div><!-- [1.9] -->
   <div id="missions-list"></div>
@@ -212,36 +141,63 @@
   <button id="missions-close">← BACK TO MENU</button><!-- [1.9] -->
 </div>
 
-<!-- TUTORIAL -->
-<div id="screen-tutorial" class="screen-base">
-  <div id="tut-progress-bar"><div id="tut-progress-fill" style="width:0%"></div></div>
-  <div id="tut-board-wrap">
-    <!-- Cube with bubble floats above the board --> <!-- [1.9.1] translated -->
-    <div id="tut-teacher-wrap">
-      <div id="tut-teacher-face">😊</div>
-      <div id="tut-bubble">
-        <div id="tut-step-num">STEP 1 / 10</div><!-- [1.9] -->
-        <div id="tut-text">Hi! I'm <strong>Cubek</strong>.<br>I'll teach you how to play <strong>Gridlock</strong>!</div><!-- [1.9.1] renamed -->
-      </div>
+<!-- GAME MODES SCREEN --> <!-- [1.10] -->
+<div id="screen-modes" class="screen-base">
+  <div id="modes-header">
+    <span id="modes-title">GAME MODES</span>
+  </div>
+  <div id="modes-list">
+    <div class="mode-card" id="mode-card-timeattack">
+      <div class="mode-card-icon">⏱</div>
+      <div class="mode-card-name">TIME ATTACK</div>
+      <div class="mode-card-desc">60 seconds — score as many rounds as possible</div>
+      <div class="mode-card-status"></div>
     </div>
-    <div id="tut-board"></div>
-    <canvas id="tut-canvas"></canvas>
+    <div class="mode-card" id="mode-card-hardcore">
+      <div class="mode-card-icon">💀</div>
+      <div class="mode-card-name">HARDCORE</div>
+      <div class="mode-card-desc">One life per day — death locks you out till midnight</div>
+      <div class="mode-card-status"></div>
+    </div>
+    <div class="mode-card" id="mode-card-daily">
+      <div class="mode-card-icon">📅</div>
+      <div class="mode-card-name">DAILY</div>
+      <div class="mode-card-desc">Today's fixed challenge — one attempt, shared by all</div>
+      <div class="mode-card-status"></div>
+    </div>
   </div>
-  <div id="tut-actions">
-    <div id="tut-hint"></div>
-    <button id="tut-btn-next">NEXT →</button><!-- [1.9] -->
-    <button id="tut-btn-skip">Skip tutorial</button><!-- [1.9] -->
-  </div>
+  <button class="menu-btn" id="btn-modes-back" style="width:min(300px,88vw);margin-top:8px;">← BACK</button>
 </div>
 
-<!-- Skip confirmation --> <!-- [1.9.1] translated -->
-<div id="tut-skip-confirm">
-  <div id="tut-teacher-face-2" style="font-size:40px;animation:tut-float 2s ease-in-out infinite;">😟</div>
-  <p>Are you sure you want to skip the tutorial? You can always launch it from the menu.</p><!-- [1.9] -->
-  <div class="tut-skip-btns">
-    <button id="tut-skip-yes">Yes, skip</button><!-- [1.9] -->
-    <button id="tut-skip-no">No, go back</button><!-- [1.9] -->
+<!-- [2.0-s4h] old text tutorial removed — tutorial now runs live on #app -->
+
+<!-- WORLD CHOICE --> <!-- [2.0-s1] -->
+<div id="screen-world-choice" class="screen-base">
+  <div id="wc-title">✦ VOID KING DEFEATED</div>
+  <div id="wc-subtitle">You have torn a rift in the grid.</div>
+  <div id="wc-options">
+    <div class="wc-card" id="wc-world1">
+      <div class="wc-card-icon">⚡</div>
+      <div class="wc-card-name">CONTINUE</div>
+      <div class="wc-card-desc">Keep playing in the neon grid — Round 101 awaits</div>
+    </div>
+    <div class="wc-card" id="wc-world2">
+      <div class="wc-card-icon">✦</div>
+      <div class="wc-card-name">ENTER THE VOID</div>
+      <div class="wc-card-desc">Step into the cosmic world — new dangers, new rewards</div>
+    </div>
   </div>
+  <div id="wc-note">You can switch worlds from the main menu at any time.</div>
+</div>
+
+<!-- CUBEK 2.0 INTRO --> <!-- [2.0-s1] -->
+<div id="screen-cubek2" class="screen-base">
+  <div id="cubek2-face">✦</div>
+  <div id="cubek2-bubble">
+    <div id="cubek2-name">CUBEK 2.0</div>
+    <div id="cubek2-text"></div>
+  </div>
+  <button id="cubek2-next">NEXT →</button>
 </div>
 
 <!-- RESET DIALOG --> <!-- [1.9.1] translated -->
@@ -269,37 +225,36 @@
     <div id="hud-coins">🪙 0</div>
     <div id="hud-info">Round 0 · 0.0s</div><!-- [1.9] -->
     <div id="hud-dash">⚡ –</div>
+    <div id="hud-blackhole" style="display:none"></div><!-- [2.0-s2] -->
+    <div id="hud-timer" style="display:none"></div><!-- [1.10] -->
     <div id="hud-combo" style="display:none"></div><!-- [1.9.2] -->
+    <div id="hud-gridlock" style="display:none"></div><!-- [1.12] -->
     <div id="hud-fps"></div>
   </div>
   <div id="board-wrap">
     <div id="board"></div>
     <canvas id="anim-canvas"></canvas>
+    <div id="board-tear"><!-- [2.0-s3.4] Grid Glitch lightning bolt overlay -->
+      <svg id="bolt-svg" viewBox="0 0 100 100" preserveAspectRatio="none">
+        <polyline id="bolt-line" vector-effect="non-scaling-stroke"></polyline>
+      </svg>
+    </div>
   </div>
   <div id="msg">Click a cell to Dash (max 5 cells). Lasers and blocks are deadly!</div><!-- [1.9] -->
   <div id="combo-flash"></div><!-- [1.9.2] -->
+  <div id="round-mod-banner"></div><!-- [2.0-s3] -->
+  <div id="tut-coach" style="display:none"></div><!-- [2.0-s4h] one-line coachmark bubble -->
+  <button id="tut-skip" style="display:none">Skip ✕</button><!-- [2.0-s4h] corner skip, whole tutorial -->
 </div>
 
-<!-- FLOATING TESTER PANEL (during game) --> <!-- [1.9.1] translated -->
-<div id="tester-float" style="position:fixed;bottom:16px;right:16px;z-index:40;
-  display:flex;flex-direction:column;align-items:flex-end;gap:6px;
-  visibility:hidden;pointer-events:none;">
-  <div id="tester-float-panel" style="display:none;flex-direction:column;gap:6px;
-    background:rgba(0,10,0,.92);border:1px solid #0f0;border-radius:10px;
-    padding:10px;min-width:160px;backdrop-filter:blur(8px);">
-    <div style="font-size:9px;color:#2a4a2a;letter-spacing:2px;margin-bottom:2px;">⚙ TESTER IN-GAME</div><!-- [1.9] -->
-    <button class="tester-float-btn" id="tf-noclip">💀 Noclip: OFF</button>
-    <button class="tester-float-btn" id="tf-dashinf">⚡ ∞ Dashes: OFF</button><!-- [1.9] -->
-    <button class="tester-float-btn" id="tf-slow">🐢 Slow: OFF</button>
-    <button class="tester-float-btn" id="tf-freeze">❄️ Freeze: OFF</button>
-    <div style="height:1px;background:#1a2a1a;margin:2px 0;"></div>
-    <button class="tester-float-btn tester-float-action" id="tf-die">💀 Trigger death</button><!-- [1.9] -->
-    <button class="tester-float-btn tester-float-action" id="tf-next">⏭ Next round</button><!-- [1.9] -->
-  </div>
-  <button id="tester-float-toggle" style="width:44px;height:44px;border-radius:50%;
-    background:#0a200a;border:1.5px solid #0f0;color:#0f0;font-size:18px;
-    cursor:pointer;display:flex;align-items:center;justify-content:center;
-    box-shadow:0 0 10px rgba(0,255,0,.2);transition:transform .15s;">⚙</button>
+<!-- [1.10.1] Tester FAB -->
+<div id="tester-fab" style="display:none">
+  <button id="tester-fab-btn">⚙</button>
+  <div id="tester-fab-menu" class="fab-hidden"></div>
+  <div id="fab-feedback" style="display:none;position:absolute;bottom:56px;right:0;
+    background:rgba(0,200,255,0.15);border:1px solid #0cf;border-radius:8px;
+    padding:6px 14px;color:#0cf;font-size:12px;letter-spacing:1px;
+    white-space:nowrap;pointer-events:none;z-index:1;"></div>
 </div>
 
 <!-- DEATH OVERLAY -->
@@ -329,6 +284,26 @@
   <button id="shop-close">← Back</button><!-- [1.9] -->
 </div>
 
-<script src="cube_master.js"></script>
+<!-- VOID SHOP (World 2 loot box) --> <!-- [2.0-s5c] -->
+<div id="void-shop">
+  <div id="void-shop-header">
+    <h2>VOID SHOP</h2>
+    <div id="void-bal">✦ 0</div>
+  </div>
+  <div id="void-opener"></div>
+  <div id="void-collection"></div>
+  <button id="void-shop-close">← Back</button>
+</div>
+<!-- VOID reveal modal (reel + item reveal) --> <!-- [2.0-s5c] -->
+<div id="void-reveal">
+  <div id="void-reel-viewport">
+    <div id="void-reel-strip"></div>
+    <div id="void-reel-pointer"></div>
+  </div>
+  <div id="void-reveal-card"></div>
+  <button id="void-reveal-ok">CONTINUE</button>
+</div>
+
+<script src="cube_master.js?v=2.0-s5c.2"></script>
 </body>
 </html>
