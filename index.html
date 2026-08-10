@@ -323,21 +323,28 @@
   <button id="void-reveal-ok">CONTINUE</button>
 </div>
 
-<!-- [MODULE] cube_master.js is being split into js/*.js. Load order is significant:
-     these are plain scripts sharing one global scope, so a binding must be declared
-     before any top-level code that runs at load time uses it. cube_master.js stays
-     last until the split finishes, then becomes js/main.js. -->
-<script src="js/constants.js?v=2.0-mod2"></script>
-<script src="js/state.js?v=2.0-mod2"></script>
-<script src="js/dom.js?v=2.0-mod2"></script>
-<script src="js/persistence.js?v=2.0-mod2"></script>
-<script src="js/skins.js?v=2.0-mod2"></script>
-<script src="js/sound.js?v=2.0-mod2"></script>
-<script src="js/board-render.js?v=2.0-mod2"></script>
-<script src="js/hazards.js?v=2.0-mod2"></script>
-<script src="js/rounds.js?v=2.0-mod2"></script>
-<script src="js/bosses.js?v=2.0-mod2"></script>
-<script src="js/world2.js?v=2.0-mod2"></script>
-<script src="cube_master.js?v=2.0-mod2"></script>
+<!-- [MODULE] LOAD ORDER IS SIGNIFICANT. These are plain scripts sharing one global
+     scope (no build step - GitHub Pages serves this as-is), so any binding must be
+     declared before top-level code that runs at load time uses it. Hence:
+     constants -> state -> dom -> everything else -> main last.
+     main.js holds all the event wiring and the bootstrap, so it must stay last. -->
+<script src="js/constants.js?v=2.0-mod3"></script>
+<script src="js/state.js?v=2.0-mod3"></script>
+<script src="js/dom.js?v=2.0-mod3"></script>
+<script src="js/persistence.js?v=2.0-mod3"></script>
+<script src="js/skins.js?v=2.0-mod3"></script>
+<script src="js/sound.js?v=2.0-mod3"></script>
+<script src="js/board-render.js?v=2.0-mod3"></script>
+<script src="js/hazards.js?v=2.0-mod3"></script>
+<script src="js/rounds.js?v=2.0-mod3"></script>
+<script src="js/bosses.js?v=2.0-mod3"></script>
+<script src="js/world2.js?v=2.0-mod3"></script>
+<script src="js/tester.js?v=2.0-mod3"></script>
+<script src="js/screens.js?v=2.0-mod3"></script>
+<script src="js/shop.js?v=2.0-mod3"></script>
+<script src="js/lootbox.js?v=2.0-mod3"></script>
+<script src="js/missions.js?v=2.0-mod3"></script>
+<script src="js/tutorial.js?v=2.0-mod3"></script>
+<script src="js/main.js?v=2.0-mod3"></script>
 </body>
 </html>
