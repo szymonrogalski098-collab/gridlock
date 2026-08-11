@@ -271,6 +271,14 @@ body.world2 .capybara-bubble::before { border-right-color:rgba(20,8,40,.92); }
   color:#ffd700; text-shadow:0 0 14px #ff8800, 0 0 30px #ff440066;
   animation:ad-reward-rise 1.4s cubic-bezier(.2,.8,.3,1) forwards;
 }
+/* [2.0-adfix] Same motion as the reward flash, deliberately drained of colour: this one reports
+   that nothing was earned, so it must not read as a payout. */
+.ad-note-float {
+  position:fixed; left:50%; top:44%; pointer-events:none; z-index:220;
+  font-family:monospace; font-size:14px; letter-spacing:1px;
+  color:#88aacc; text-shadow:0 0 10px rgba(0,0,0,.9);
+  animation:ad-reward-rise 1.4s cubic-bezier(.2,.8,.3,1) forwards;
+}
 @keyframes ad-reward-rise {
   0%   { opacity:0; transform:translate(-50%,10px) scale(.7); }
   18%  { opacity:1; transform:translate(-50%,0) scale(1.15); }

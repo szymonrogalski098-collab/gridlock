@@ -10,7 +10,30 @@
 const INTERSTITIAL_CHANCE      = 0.30;  // ~30% of deaths, when nothing else blocks it
 const INTERSTITIAL_COOLDOWN_MS = 90000; // never two ads inside 90s, however unlucky the rolls get
 
-function _adsAvailable() { return _cgReady && _cgSdk; }
+// [2.0-adfix] Latched the first time an ad turns out not to be servable at all (no fill, ads off for
+// this build, blocked by an extension). Everything ad-shaped disappears for the rest of the session
+// from that moment on. The alternative is a button that does nothing when clicked, which is both a
+// bad first impression and exactly the kind of dead control a store review flags.
+let _adsUnavailable = false;
+
+function _adsAvailable() { return _cgReady && _cgSdk && !_adsUnavailable; }
+
+// Shared handling for a rewarded ad that didn't pay out.
+//   'unavailable' — the ad never appeared. Nothing is coming this session; retire the offers.
+//   'incomplete'  — it played but wasn't finished (closed early). Their choice, so let them retry.
+function _onRewardedFail(reason, btn) {
+  if (reason === 'unavailable') {
+    _adsUnavailable = true;
+    _hideDeathAdButtons();
+    _adNote('Ads unavailable right now');
+    if (typeof renderVoidOpener === 'function' && voidShopEl && voidShopEl.classList.contains('open')) {
+      renderVoidOpener(); // drop the ad row too, if the player is standing in the shop
+    }
+    return;
+  }
+  if (btn) btn.disabled = false;
+  _adNote('Ad not completed');
+}
 
 // Every ad of either kind stamps this, so the cooldown covers rewarded→interstitial too: a player
 // who just chose to watch an ad for a revive doesn't get an unsolicited one right behind it.
@@ -71,7 +94,7 @@ function offerDeathAdBonus() {
         animateCounter('_dc', base + bonus, 420); // always counts from 0, same as the first reveal
         _adRewardFlash(bonus);
       },
-      () => { btn.disabled = false; } // declined or failed — let them try again
+      (reason) => _onRewardedFail(reason, btn)
     );
   };
 }
@@ -92,7 +115,12 @@ function offerAdBox() {
         localStorage.setItem('cm_world2_box_ad_date', box_adWatchedDate);
         resolve(_resolveBoxOpen());
       },
-      () => resolve(null)
+      (reason) => {
+        // Nothing is consumed either way; 'unavailable' additionally retires the row, so the shop
+        // never leaves a button sitting there that has already proven it does nothing.
+        if (reason === 'unavailable') { _adsUnavailable = true; _adNote('Ads unavailable right now'); }
+        resolve(null);
+      }
     );
   });
 }
@@ -131,7 +159,7 @@ function offerReviveAd() {
         startRound(); // which they never got paid for. No free progression out of an ad.
         cgGameplayStart();
       },
-      () => { btn.disabled = false; }
+      (reason) => _onRewardedFail(reason, btn)
     );
   };
 }
@@ -157,10 +185,16 @@ function maybeShowInterstitial(onDone) {
 // ══════════════════════════════════════════════════
 // Same idea as spawnMenuCoinFloat (js/main.js) but deliberately its own class: ad rewards get a
 // hotter colour and a slower rise, so they never read as an ordinary round payout.
-function _adRewardFlash(amount) {
+function _adRewardFlash(amount) { _adFloat(`+${amount} ${curIcon()}`, 'ad-reward-float'); }
+
+// [2.0-adfix] Neutral sibling for the times an ad doesn't pay out. Being told "ads unavailable"
+// is a far better outcome than a button that silently stops existing.
+function _adNote(text) { _adFloat(text, 'ad-note-float'); }
+
+function _adFloat(text, cls) {
   const el = document.createElement('div');
-  el.className = 'ad-reward-float';
-  el.textContent = `+${amount} ${curIcon()}`;
+  el.className = cls;
+  el.textContent = text;
   document.body.appendChild(el);
   setTimeout(() => el.remove(), 1400);
 }

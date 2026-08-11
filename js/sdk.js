@@ -113,24 +113,67 @@ document.addEventListener('visibilitychange', () => {
 // Ads only serve under Full Launch; under Basic Launch the network side is a no-op, but the
 // integration is complete either way.
 
+// [2.0-adfix] requestAd can accept a request and then never call back at all — verified in the
+// CrazyGames `local` environment, where a rewarded request fires adStarted and nothing follows, and
+// reported on preview builds where clicking the button did nothing. Without a guard that leaves the
+// game muted (_cgMuteAudio suspended the context), frozen (pauseGame never undone) and, for a
+// midgame ad, permanently short of its death screen, because onDone is what puts it up.
+//
+// Two different waits, because they mean different things:
+//   • no adStarted within AD_START_TIMEOUT_MS  → nothing is on screen, the ad never came. Bail.
+//   • adStarted but no end within AD_WATCHDOG_MS → a real ad IS playing, so this must be long
+//     enough never to cut a legitimate one short. It exists only so a hung ad can't strand the
+//     game forever; it is not a timeout on the ad itself.
+const AD_START_TIMEOUT_MS = 8000;
+const AD_WATCHDOG_MS      = 120000;
+
+// Wraps one ad request so exactly one outcome is ever delivered, whichever arrives first, and the
+// game is always unmuted and unfrozen on the way out.
+function _cgRunAd(type, onOk, onFail) {
+  let settled = false, started = false, timer = null;
+  const finish = (fn, arg) => {
+    if (settled) return;
+    settled = true;
+    clearTimeout(timer);
+    _cgMuteAudio(false);
+    resumeGame();
+    fn(arg);
+  };
+  timer = setTimeout(() => {
+    console.warn('[CrazyGames] ' + type + ' ad never started — treating as unavailable');
+    finish(onFail, 'unavailable');
+  }, AD_START_TIMEOUT_MS);
+  try {
+    _cgSdk.ad.requestAd(type, {
+      adStarted: () => {
+        started = true;
+        clearTimeout(timer);
+        timer = setTimeout(() => {
+          console.warn('[CrazyGames] ' + type + ' ad started but never ended — releasing the game');
+          finish(onFail, 'incomplete');
+        }, AD_WATCHDOG_MS);
+        pauseGame(); _cgMuteAudio(true);
+      },
+      adFinished: () => finish(onOk),
+      adError:    (e) => {
+        console.warn('[CrazyGames] ' + type + ' ad error', e);
+        finish(onFail, started ? 'incomplete' : 'unavailable');
+      },
+    });
+  } catch (e) {
+    console.warn('[CrazyGames] ' + type + ' ad threw', e);
+    finish(onFail, 'unavailable');
+  }
+}
+
 function cgShowMidgameAd(onDone) {
   if (!_cgReady || !_cgSdk) { onDone(); return; } // no SDK: carry on as if the ad finished
-  try {
-    _cgSdk.ad.requestAd('midgame', {
-      adStarted:  () => { pauseGame(); _cgMuteAudio(true); },
-      adFinished: () => { _cgMuteAudio(false); resumeGame(); onDone(); },
-      adError:    (e) => { console.warn('[CrazyGames] midgame ad error', e); _cgMuteAudio(false); resumeGame(); onDone(); },
-    });
-  } catch (e) { console.warn('[CrazyGames] midgame ad threw', e); _cgMuteAudio(false); resumeGame(); onDone(); }
+  // Either way the game must continue — a midgame ad owes the player nothing, so success and
+  // failure land in the same place.
+  _cgRunAd('midgame', onDone, onDone);
 }
 
 function cgShowRewardedAd(onReward, onDeclineOrFail) {
-  if (!_cgReady || !_cgSdk) { onDeclineOrFail(); return; } // no SDK: no ad watched, so no reward
-  try {
-    _cgSdk.ad.requestAd('rewarded', {
-      adStarted:  () => { pauseGame(); _cgMuteAudio(true); },
-      adFinished: () => { _cgMuteAudio(false); resumeGame(); onReward(); },
-      adError:    (e) => { console.warn('[CrazyGames] rewarded ad error', e); _cgMuteAudio(false); resumeGame(); onDeclineOrFail(); },
-    });
-  } catch (e) { console.warn('[CrazyGames] rewarded ad threw', e); _cgMuteAudio(false); resumeGame(); onDeclineOrFail(); }
+  if (!_cgReady || !_cgSdk) { onDeclineOrFail('unavailable'); return; } // no SDK: no ad, no reward
+  _cgRunAd('rewarded', onReward, onDeclineOrFail);
 }
