@@ -576,6 +576,28 @@ body.world2 #board-wrap.mod-flash #board { box-shadow:0 0 30px rgba(155,89,182,.
   text-shadow:0 0 20px #ff2200; animation:flicker .4s infinite alternate; }
 #death-stats  { font-size:14px; color:#aaccee; text-align:center; line-height:2; }
 
+/* [2.0-clarity] Earnings as an itemised sum. Labels left, numbers right, tabular figures so the
+   digits line up in a column — the point is that the player can see the rows add to the total
+   instead of having to reconcile two unrelated numbers. */
+/* block + margin:auto, NOT inline-block: as an inline-block the following "Best time" line
+   flowed onto the same row and the box didn't centre. */
+.death-earn { display:block; width:238px; margin:6px auto 10px;
+  text-align:left; line-height:1.65; }
+.de-row { display:flex; justify-content:space-between; align-items:baseline; gap:20px; }
+.de-row > span { color:#7d9ab8; }
+.de-row > b    { color:#ffd700; font-variant-numeric:tabular-nums; }
+.de-bonus > span { color:#c8a63f; }
+.de-total { margin-top:4px; padding-top:4px; font-size:15px;
+  border-top:1px solid rgba(255,215,0,.3); }
+.de-total > span { color:#aaccee; }
+.de-total > span em { font-style:normal; color:#ffd700; font-weight:bold; letter-spacing:1px; }
+.de-total > b { color:#fff; text-shadow:0 0 10px rgba(255,215,0,.6); }
+body.world2 .de-row > b     { color:#cc88ff; }
+body.world2 .de-bonus > span{ color:#a578c8; }
+body.world2 .de-total       { border-top-color:rgba(204,136,255,.3); }
+body.world2 .de-total > span em { color:#cc88ff; }
+body.world2 .de-total > b   { text-shadow:0 0 10px rgba(155,89,182,.6); }
+
 /* [2.0-pause] PAUSE OVERLAY — same skeleton as #death-overlay so behaviour matches, but
    deliberately calmer: lighter scrim and a steady cyan title instead of the flickering red,
    so a paused game can never be mistaken for a lost one. z-index 40 sits above #app (10) and
@@ -603,11 +625,8 @@ body.world2 #hud-pause-btn { color:#cc88ff; }
   50%      { text-shadow:0 0 20px #0ff, 0 0 44px #0ff; opacity:.75; } }
 .new-best { color:#0ff; font-weight:bold; letter-spacing:1px; /* [1.9.3] */
   animation:new-best-pulse 0.8s ease-in-out infinite; }
-@keyframes record-bonus-pulse { /* [2.0-w1fix] */
-  0%,100% { text-shadow:0 0 8px #ffd700, 0 0 18px #ff8800; opacity:1; }
-  50%      { text-shadow:0 0 22px #ffd700, 0 0 46px #ff8800; opacity:.78; } }
-.record-bonus { color:#ffd700; font-weight:bold; letter-spacing:1px; font-size:15px; /* [2.0-w1fix] */
-  animation:record-bonus-pulse 0.8s ease-in-out infinite; }
+/* [2.0-clarity] .record-bonus removed — the bonus is now a row inside .death-earn's itemised sum
+   rather than a separate pulsing announcement competing with ★ NEW BEST for the same event. */
 @keyframes purchase-flash { /* [1.9.3] */
   0%   { color:#ffd700; text-shadow:0 0 12px #ffd700; }
   60%  { color:#0ff;    text-shadow:0 0 18px #0ff; }

@@ -10,7 +10,7 @@
      itself. Off CrazyGames the file simply isn't there (or reports a disabled environment) and
      js/sdk.js falls back to standalone — see the environment gate there. -->
 <script src="https://sdk.crazygames.com/crazygames-sdk-v3.js"></script>
-<link rel="stylesheet" href="cube_master.css?v=2.0-sdk">
+<link rel="stylesheet" href="cube_master.css?v=2.0-clarity">
 </head>
 <body>
 <div id="intro-overlay"></div>
@@ -208,7 +208,7 @@
     <div class="wc-card" id="wc-world1">
       <div class="wc-card-icon">⚡</div>
       <div class="wc-card-name">CONTINUE</div>
-      <div class="wc-card-desc">Keep playing in the neon grid — Round 101 awaits</div>
+      <div class="wc-card-desc">Keep playing in the neon grid — Round 61 awaits</div>
     </div>
     <div class="wc-card" id="wc-world2">
       <div class="wc-card-icon">✦</div>
@@ -354,26 +354,26 @@
      declared before top-level code that runs at load time uses it. Hence:
      constants -> state -> dom -> everything else -> main last.
      main.js holds all the event wiring and the bootstrap, so it must stay last. -->
-<script src="js/constants.js?v=2.0-sdk"></script>
-<script src="js/state.js?v=2.0-sdk"></script>
-<script src="js/dom.js?v=2.0-sdk"></script>
-<script src="js/persistence.js?v=2.0-sdk"></script>
-<script src="js/skins.js?v=2.0-sdk"></script>
-<script src="js/sound.js?v=2.0-sdk"></script>
-<script src="js/board-render.js?v=2.0-sdk"></script>
-<script src="js/hazards.js?v=2.0-sdk"></script>
-<script src="js/rounds.js?v=2.0-sdk"></script>
-<script src="js/bosses.js?v=2.0-sdk"></script>
-<script src="js/world2.js?v=2.0-sdk"></script>
-<script src="js/tester.js?v=2.0-sdk"></script>
-<script src="js/screens.js?v=2.0-sdk"></script>
-<script src="js/shop.js?v=2.0-sdk"></script>
-<script src="js/lootbox.js?v=2.0-sdk"></script>
-<script src="js/missions.js?v=2.0-sdk"></script>
-<script src="js/tutorial.js?v=2.0-sdk"></script>
-<script src="js/capybara.js?v=2.0-sdk"></script>
-<script src="js/sdk.js?v=2.0-sdk"></script><!-- [2.0-sdk] after sound.js (audioCtx) and tester.js (fabPause/ResumeGame) -->
-<script src="js/pause.js?v=2.0-sdk"></script><!-- [2.0-pause] after tester.js, screens.js and sdk.js -->
-<script src="js/main.js?v=2.0-sdk"></script>
+<script src="js/constants.js?v=2.0-clarity"></script>
+<script src="js/state.js?v=2.0-clarity"></script>
+<script src="js/dom.js?v=2.0-clarity"></script>
+<script src="js/persistence.js?v=2.0-clarity"></script>
+<script src="js/skins.js?v=2.0-clarity"></script>
+<script src="js/sound.js?v=2.0-clarity"></script>
+<script src="js/board-render.js?v=2.0-clarity"></script>
+<script src="js/hazards.js?v=2.0-clarity"></script>
+<script src="js/rounds.js?v=2.0-clarity"></script>
+<script src="js/bosses.js?v=2.0-clarity"></script>
+<script src="js/world2.js?v=2.0-clarity"></script>
+<script src="js/tester.js?v=2.0-clarity"></script>
+<script src="js/screens.js?v=2.0-clarity"></script>
+<script src="js/shop.js?v=2.0-clarity"></script>
+<script src="js/lootbox.js?v=2.0-clarity"></script>
+<script src="js/missions.js?v=2.0-clarity"></script>
+<script src="js/tutorial.js?v=2.0-clarity"></script>
+<script src="js/capybara.js?v=2.0-clarity"></script>
+<script src="js/sdk.js?v=2.0-clarity"></script><!-- [2.0-sdk] after sound.js (audioCtx) and tester.js (fabPause/ResumeGame) -->
+<script src="js/pause.js?v=2.0-clarity"></script><!-- [2.0-pause] after tester.js, screens.js and sdk.js -->
+<script src="js/main.js?v=2.0-clarity"></script>
 </body>
 </html>

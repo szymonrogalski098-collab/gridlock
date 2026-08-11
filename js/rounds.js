@@ -370,6 +370,25 @@ function _awardRecordBonus() {
   return bonus;
 }
 
+// [2.0-clarity] The earnings block on the game-over screen, as an itemised sum that adds up on
+// screen instead of two numbers the player has to reconcile. #_dc stays the animated total, so
+// animateCounter keeps working unchanged. With no record bonus it collapses to a single row.
+function _earnRows(recBonus) {
+  const label = currentWorld === 2 ? 'Crystals' : 'Coins';
+  const total = currentWorld === 2 ? sessionCrystalsEarned : sessionCoinsEarned;
+  const base  = total - recBonus;
+  if (recBonus <= 0) {
+    return `<div class="death-earn"><div class="de-row de-total">`
+         + `<span>${label} earned</span><b>+<span id="_dc">0</span> ${curIcon()}</b></div></div>`;
+  }
+  return `<div class="death-earn">`
+       + `<div class="de-row"><span>${label} earned</span><b>+${base}</b></div>`
+       + `<div class="de-row de-bonus"><span>Record bonus</span><b>+${recBonus}</b></div>`
+       + `<div class="de-row de-total"><span>Total <em>3×</em></span>`
+       + `<b>+<span id="_dc">0</span> ${curIcon()}</b></div>`
+       + `</div>`;
+}
+
 function _timeAttackOver() { // [1.10]
   if (!alive) return;
   alive = false; lastTime = (_virtMs() / 1000).toFixed(1); // [1.10.2-fix]
@@ -388,10 +407,9 @@ function _timeAttackOver() { // [1.10]
     deathStats.innerHTML =
       `Time Attack — 60 seconds<br>`+ // [2.0-deemoji]
       `${bestComboThisSession >= 5 ? 'Best combo: <b>x'+bestComboThisSession+'</b><br>' : ''}`+
-      `<br>Rounds: <b><span id="_dr">0</span></b> &nbsp;|&nbsp; `+
-      `<span style="color:#ffd700">🪙 +<span id="_dc">0</span></span><br>`+
-      `Best (Time Attack): <b>${bestTimeAttack} rounds</b>`+
-      (_recBonus > 0 ? `<br><span class="record-bonus">NEW RECORD — 3× BONUS +${_recBonus} ${curIcon()}</span>` : ''); // [2.0-w1fix][2.0-deemoji]
+      `<br>Rounds: <b><span id="_dr">0</span></b><br>`+
+      _earnRows(_recBonus)+ // [2.0-clarity] same itemised sum as the main game-over screen
+      `Best (Time Attack): <b>${bestTimeAttack} rounds</b>`;
     deathOverlay.classList.add('show');
     animateCounter('_dr', round, 520);
     animateCounter('_dc', sessionCoinsEarned, 520);
@@ -473,10 +491,14 @@ function die(reason) {
       `${hardMode?'<span style="color:#ff6600">🔥 Hard Mode</span><br>':''}`+
       `${bestComboThisSession >= 5 ? 'Best combo: <b>x'+bestComboThisSession+'</b><br>' : ''}`+ // [1.9.2]
       `<br>Time: <b>${lastTime}s</b> &nbsp;|&nbsp; Rounds: <b><span id="_dr">0</span></b><br>`+ // [1.9.3]
-      `<span style="color:#ffd700">${curIcon()} ${currentWorld===2?'Crystals':'Coins'} earned: <b>+<span id="_dc">0</span></b></span><br>`+ // [1.9.3][2.0-s1]
+      // [2.0-clarity] The reward used to be two unrelated numbers: "Coins earned: +231" (already
+      // including the bonus) and a separate "3× BONUS +154". Nothing said how they related, so the
+      // player had to work out that 231 = 77 × 3 and 154 = 77 × 2. Now it's an itemised sum that
+      // adds up on screen. The "3×" label sits on the Total, because the total genuinely is 3× the
+      // base — putting it on the bonus row would have implied 154 = 77 × 3, which is wrong.
+      _earnRows(_recBonus)+
       `Best time: <b>${currentWorld===2?w2BestTime:bestTime}s</b> &nbsp;|&nbsp; Best rounds: <b>${currentWorld===2?w2BestRound:bestRound}</b>`+ // [2.0-s3] per world
       (_newRecord ? `<br><span class="new-best">★ NEW BEST!</span>` : '')+ // [1.9.3]
-      (_recBonus > 0 ? `<br><span class="record-bonus">NEW RECORD — 3× BONUS +${_recBonus} ${curIcon()}</span>` : '')+ // [2.0-w1fix][2.0-deemoji]
       (gameMode==='timeattack' ? `<br>Best (Time Attack): <b>${bestTimeAttack} rounds</b>` : '')+ // [1.10]
       (gameMode==='hardcore'   ? `<br>Best (Hardcore): <b>${bestHardcore} rounds</b>` : '')+      // [1.10]
       (gameMode==='daily'      ? `<br>Best (Daily): <b>${bestDaily} rounds</b>` : '')+            // [1.10]
