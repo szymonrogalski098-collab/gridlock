@@ -151,6 +151,8 @@ function startGame(hard = false, fromTester = false, custom = false, tutorial = 
   if (_asteroidsEnabled() && !tutorialActive) scheduleAsteroid(); // [2.0-s2][2.0-s3.1][2.0-s4h] no asteroids in tutorial
   sessionCoinsEarned = 0;
   sessionCrystalsEarned = 0; // [2.0-s1]
+  // [2.0-ads] per-game ad + payout bookkeeping — a fresh game gets a fresh revive and a clean slate
+  reviveUsedThisGame = false; _timeBankedThisGame = 0; _recBonusPaidThisGame = 0; _lastRecBonus = 0;
   // [1.10] Mode-specific init
   if (gameMode === 'daily') {
     localStorage.setItem('cm_daily_date', _todayStr());

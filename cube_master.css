@@ -273,6 +273,24 @@ body.world2 .capybara-bubble::before { border-right-color:rgba(20,8,40,.92); }
   0%   { opacity:1; transform:translateY(0) scale(1); }
   100% { opacity:0; transform:translateY(-70px) scale(.5); }
 }
+/* [2.0-ads] Ad-reward payout. Deliberately not .float-coin: it sits centre-screen over the death
+   overlay (hence the higher z-index), rises slower and burns hotter, so an ad bonus never reads
+   as an ordinary round payout drifting up from the menu counter. */
+.ad-reward-float {
+  position:fixed; left:50%; top:40%; pointer-events:none; z-index:220;
+  font-family:monospace; font-size:22px; font-weight:bold;
+  color:#ffd700; text-shadow:0 0 14px #ff8800, 0 0 30px #ff440066;
+  animation:ad-reward-rise 1.4s cubic-bezier(.2,.8,.3,1) forwards;
+}
+@keyframes ad-reward-rise {
+  0%   { opacity:0; transform:translate(-50%,10px) scale(.7); }
+  18%  { opacity:1; transform:translate(-50%,0) scale(1.15); }
+  32%  { transform:translate(-50%,-6px) scale(1); }
+  100% { opacity:0; transform:translate(-50%,-90px) scale(.8); }
+}
+/* [2.0-ads] .de-ad carries .de-bonus too, so the ad row inherits the bonus-row styling in both
+   worlds. The class exists as a hook, not as an override — a colour of its own here would fight
+   body.world2's palette. */
 #combo-flash { /* [1.9.2] */
   position:fixed; top:35%; left:50%; transform:translate(-50%,-50%);
   font-size:16px; font-weight:bold; color:#ff6600;

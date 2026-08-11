@@ -20,6 +20,10 @@ function _boxCheckReset() {
 }
 function canOpenFreeBox() { _boxCheckReset(); return box_lastFreeDate !== _todayStr(); }
 function canBuyBox()      { _boxCheckReset(); return box_boughtToday < 2; }
+// [2.0-ads] Third source, gated on its own date key: watching an ad neither consumes the daily free
+// box nor counts against the 2/day purchase limit. The grant itself lives in offerAdBox()
+// (js/ads-rewards.js) so the date is only written once the reward actually lands.
+function canOpenAdBox()   { return box_adWatchedDate !== _todayStr(); }
 
 function _rollTier() {
   const total = Object.values(VOID_TIER_CONFIG).reduce((s,t)=>s+t.weight,0);
@@ -135,6 +139,24 @@ function renderVoidOpener() {
   buyRow.append(bInfo, bBtn);
 
   voidOpenerEl.append(freeRow, buyRow);
+
+  // [2.0-ads] Ad box row — only rendered where ads exist at all, so off CrazyGames the shop looks
+  // exactly as it did before.
+  if (_cgReady && _cgSdk && !testerActive) {
+    const adAvail = canOpenAdBox();
+    const adRow = document.createElement('div'); adRow.className = 'void-open-row';
+    const aInfo = document.createElement('div'); aInfo.className = 'void-open-info';
+    const aTitle = document.createElement('div'); aTitle.className = 'void-open-title'; aTitle.textContent = 'AD BOX';
+    const aSub = document.createElement('div'); aSub.className = 'void-open-sub'; aSub.id = 'void-ad-sub';
+    aSub.textContent = adAvail ? 'Watch an ad — 1 per day, on top of the free box'
+                               : `Watched today — next in ⏳ ${_fmtCountdown(_msUntilMidnight())}`;
+    aInfo.append(aTitle, aSub);
+    const aBtn = document.createElement('button'); aBtn.className = 'void-open-btn'; aBtn.id = 'void-ad-btn';
+    aBtn.textContent = 'WATCH AD FOR BOX'; aBtn.disabled = !adAvail || _voidReelBusy || _adBoxPending;
+    aBtn.addEventListener('click', ()=>handleVoidOpen('ad'));
+    adRow.append(aInfo, aBtn);
+    voidOpenerEl.appendChild(adRow);
+  }
 }
 
 function _updateVoidCountdown() { // per-second refresh of countdown + free-button state
@@ -144,10 +166,34 @@ function _updateVoidCountdown() { // per-second refresh of countdown + free-butt
   const freeAvail = canOpenFreeBox();
   fBtn.disabled = !freeAvail || _voidReelBusy;
   fSub.textContent = freeAvail ? 'Available now — 1 per day' : `Next in ⏳ ${_fmtCountdown(_msUntilMidnight())}`;
+  // [2.0-ads] same treatment for the ad row, which only exists when the SDK does
+  const aSub = document.getElementById('void-ad-sub');
+  const aBtn = document.getElementById('void-ad-btn');
+  if (!aSub || !aBtn) return;
+  const adAvail = canOpenAdBox();
+  aBtn.disabled = !adAvail || _voidReelBusy || _adBoxPending;
+  aSub.textContent = adAvail ? 'Watch an ad — 1 per day, on top of the free box'
+                             : `Watched today — next in ⏳ ${_fmtCountdown(_msUntilMidnight())}`;
 }
+
+// [2.0-ads] Guards the window between clicking the ad row and the ad resolving. Deliberately not
+// _voidReelBusy, which stays true until closeVoidReveal() and would strand the shop if the player
+// dismissed the ad.
+let _adBoxPending = false;
 
 function handleVoidOpen(kind) {
   if (_voidReelBusy) return;
+  if (kind === 'ad') { // [2.0-ads] async source, same reel afterwards
+    if (_adBoxPending || !canOpenAdBox()) return;
+    _adBoxPending = true;
+    renderVoidOpener(); // grey the row out for the duration of the ad
+    offerAdBox().then((result) => {
+      _adBoxPending = false;
+      renderVoidOpener();
+      if (result) startTierReel(result); // declined/failed → nothing consumed, row stays available
+    });
+    return;
+  }
   const result = kind === 'free' ? openFreeBox() : buyBox();
   if (!result) { renderVoidOpener(); return; } // gated / unavailable
   if (result.error === 'insufficient_funds') {
