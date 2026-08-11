@@ -48,15 +48,6 @@ function beginGame(hard) {
   }
   startGame(hard);
 }
-function testerSwitchWorld() { // [2.0-s4c] reliable W2 entry for testing — unlock + switch + restart
-  world2Unlocked = true; localStorage.setItem('cm_world2_unlocked', 'true'); // survive the load-guard
-  currentWorld = currentWorld === 2 ? 1 : 2;
-  localStorage.setItem('cm_current_world', String(currentWorld));
-  localStorage.setItem('cm_cubek2_done', 'true'); // skip the cosmic intro when testing
-  applyWorldTheme();
-  showFabFeedback(currentWorld === 2 ? '🌌 World 2 (Void)' : '⚡ World 1 (Grid)');
-  startGame(hardMode); // fresh run in the chosen world (round resets; reach 25 → PULSAR)
-}
 // [2.0-s2] SOLAR FLARES (World 2): warning = semi-transparent 2-wide band (like the World 1
 // laser warning); beam = fully-opaque bright orange/yellow 2-wide band, clamped to the board.
 function _flareBandRect(L) { // exactly 2 cells wide, clamped within board boundaries

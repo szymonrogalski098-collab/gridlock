@@ -123,6 +123,6 @@ function _tutSkip() { // [2.0-s4h] corner skip → finish immediately, no reward
 
 function startTutorial() { // [2.0-s4h] guided live run on the real engine
   gameMode = null;
-  startGame(false, false, false, true); // tutorial=true → _tutorialStart() drives the scripted beats
+  startGame(false, true); // tutorial=true → _tutorialStart() drives the scripted beats
   playUISound('tab');
 }

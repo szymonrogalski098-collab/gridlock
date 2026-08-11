@@ -9,7 +9,7 @@ let shopFromMenu = false;
 function openShop(fromMenu=false){
   shopFromMenu = fromMenu;
   clearTimeout(phaseTimer);
-  // ukryj wszystkie ekrany — sklep nakrywa wszystko przez z-index:60
+  // hide every screen — the shop covers everything via z-index:60
   SCREENS.forEach(s=>{
     const el = s==='app' ? appEl : document.getElementById(s);
     if (el) { el.style.visibility='hidden'; el.style.pointerEvents='none'; }

@@ -18,6 +18,13 @@ let _cgGameplayActive = false;
 let _cgLoadingStopWanted = false;
 let _cgLoadingStopDone   = false;
 
+// [2.0-notester] Same treatment for gameplayStart. init() resolves ~120ms after the game becomes
+// interactive (measured), so a gameplayStart issued in that window would be dropped by the _cgReady
+// guard and never retried — and because _cgGameplayActive would still read false, the matching stop
+// would vanish too, leaving the whole session invisible to CrazyGames. Recording the intent costs
+// one flag and removes the race.
+let _cgGameplayStartWanted = false;
+
 (async function initCrazyGamesSdk() {
   if (!window.CrazyGames || !window.CrazyGames.SDK) {
     console.log('[CrazyGames SDK] not present — running standalone');
@@ -45,7 +52,8 @@ let _cgLoadingStopDone   = false;
     // reviewer looks for, and the measurement is near-worthless here anyway: every script in this
     // game loads synchronously, so the real work is already done by the time init() resolves.
     try { _cgSdk.game.loadingStart(); } catch (e) {}
-    _cgFlushLoadingStop(); // the bootstrap tail almost certainly already asked for this
+    _cgFlushLoadingStop();   // the bootstrap tail almost certainly already asked for this
+    _cgFlushGameplayStart(); // ...and a very fast player may already be mid-run
   } catch (e) {
     console.warn('[CrazyGames SDK] init failed — running standalone', e);
     _cgReady = false;
@@ -64,53 +72,65 @@ function cgLoadingStop() { // [2.0-sdk] game is interactive
   _cgFlushLoadingStop();
 }
 
+function _cgFlushGameplayStart() {
+  if (!_cgGameplayStartWanted || !_cgReady || !_cgSdk) return;
+  _cgGameplayStartWanted = false;
+  if (!alive) return; // the run ended while the SDK was still coming up — nothing left to report
+  cgGameplayStart();
+}
+
 function cgGameplayStart() { // [2.0-sdk] player is actually playing
-  if (!_cgReady || !_cgSdk || _cgGameplayActive) return;
+  if (_cgGameplayActive) return;
+  if (!_cgReady || !_cgSdk) { _cgGameplayStartWanted = true; return; } // replayed by _cgFlushGameplayStart
   _cgGameplayActive = true;
   try { _cgSdk.game.gameplayStart(); } catch (e) {}
 }
 
 function cgGameplayStop() { // [2.0-sdk] menu, pause, death, world choice — anything that isn't play
+  _cgGameplayStartWanted = false; // a stop always cancels a start that never got through
   if (!_cgReady || !_cgSdk || !_cgGameplayActive) return;
   _cgGameplayActive = false;
   try { _cgSdk.game.gameplayStop(); } catch (e) {}
 }
 
-// [2.0-sdk] Tab hidden / phone locked. fabPaused is already true during a player pause (pause.js
-// routes through fabPauseGame), so that check alone would do — _pausedByPlayer is kept alongside it
-// because the two mean different things and a future change to either shouldn't silently couple them.
+// [2.0-sdk] Tab hidden / phone locked. gamePaused is already true during a player pause (pause.js
+// sets it), so that check alone would do — _pausedByPlayer is kept alongside it because the two mean
+// different things and a future change to either shouldn't silently couple them.
+// [2.0-clean] tutorialActive is excluded for the same reason startGame() excludes it: the tutorial is
+// onboarding, not gameplay. Without this, tabbing away and back mid-tutorial started reporting it as
+// a live session — the one path that contradicted that decision.
 document.addEventListener('visibilitychange', () => {
-  if (!alive || fabPaused || _pausedByPlayer) return;
+  if (!alive || gamePaused || _pausedByPlayer || tutorialActive) return;
   if (document.hidden) cgGameplayStop();
   else                 cgGameplayStart();
 });
 
-// ── ADS — built, deliberately NOT called ──────────────────────────────────────
-// Ads are off under Basic Launch regardless of integration, and the roadmap defers them to
-// post-launch. These exist so switching to Full Launch is a one-line change at the call site
-// rather than a second integration pass. Reuses the tester's pause machinery, which already
-// freezes every game timer with full elapsed-time accounting.
-// Note fabPauseGame() early-returns when !alive — an ad shown from the menu simply doesn't pause
-// anything, which is correct, since nothing is running.
+// ── ADS ───────────────────────────────────────────────────────────────────────
+// Called from js/ads-rewards.js. Both helpers freeze the game through pauseGame()/resumeGame()
+// (js/pause.js), which stops every timer with full elapsed-time accounting.
+// Note pauseGame() early-returns when !alive — an ad shown from a death screen or the shop simply
+// doesn't pause anything, which is correct, since nothing is running.
+// Ads only serve under Full Launch; under Basic Launch the network side is a no-op, but the
+// integration is complete either way.
 
 function cgShowMidgameAd(onDone) {
   if (!_cgReady || !_cgSdk) { onDone(); return; } // no SDK: carry on as if the ad finished
   try {
     _cgSdk.ad.requestAd('midgame', {
-      adStarted:  () => { fabPauseGame(); _cgMuteAudio(true); },
-      adFinished: () => { _cgMuteAudio(false); fabResumeGame(); onDone(); },
-      adError:    (e) => { console.warn('[CrazyGames] midgame ad error', e); _cgMuteAudio(false); fabResumeGame(); onDone(); },
+      adStarted:  () => { pauseGame(); _cgMuteAudio(true); },
+      adFinished: () => { _cgMuteAudio(false); resumeGame(); onDone(); },
+      adError:    (e) => { console.warn('[CrazyGames] midgame ad error', e); _cgMuteAudio(false); resumeGame(); onDone(); },
     });
-  } catch (e) { console.warn('[CrazyGames] midgame ad threw', e); _cgMuteAudio(false); fabResumeGame(); onDone(); }
+  } catch (e) { console.warn('[CrazyGames] midgame ad threw', e); _cgMuteAudio(false); resumeGame(); onDone(); }
 }
 
 function cgShowRewardedAd(onReward, onDeclineOrFail) {
   if (!_cgReady || !_cgSdk) { onDeclineOrFail(); return; } // no SDK: no ad watched, so no reward
   try {
     _cgSdk.ad.requestAd('rewarded', {
-      adStarted:  () => { fabPauseGame(); _cgMuteAudio(true); },
-      adFinished: () => { _cgMuteAudio(false); fabResumeGame(); onReward(); },
-      adError:    (e) => { console.warn('[CrazyGames] rewarded ad error', e); _cgMuteAudio(false); fabResumeGame(); onDeclineOrFail(); },
+      adStarted:  () => { pauseGame(); _cgMuteAudio(true); },
+      adFinished: () => { _cgMuteAudio(false); resumeGame(); onReward(); },
+      adError:    (e) => { console.warn('[CrazyGames] rewarded ad error', e); _cgMuteAudio(false); resumeGame(); onDeclineOrFail(); },
     });
-  } catch (e) { console.warn('[CrazyGames] rewarded ad threw', e); _cgMuteAudio(false); fabResumeGame(); onDeclineOrFail(); }
+  } catch (e) { console.warn('[CrazyGames] rewarded ad threw', e); _cgMuteAudio(false); resumeGame(); onDeclineOrFail(); }
 }

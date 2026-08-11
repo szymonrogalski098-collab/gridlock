@@ -15,22 +15,13 @@ let _lastRecBonus = 0;           // record bonus of the death currently on scree
 let _lastInterstitialAt = 0;     // timestamp of the last ad of ANY kind — throttles interstitials
 let hardMode = false;
 let _prevHudCoins = -1, _prevHudRound = -1, _prevCombo = 0; // [1.9.3]
-let testerUnlocked = false;
-let testerActive  = false; // [1.10.2-fix] no persistence — PIN required on every page load
-let tNoclip   = false;
-let tDashInf  = false;
-let tSlow     = false;
-let tFreeze   = false;
-let tInfBlackHole = false; // [2.0-s4d] tester: black-hole cooldown always 0 (both worlds + boss fights)
-let tFps      = false;
-let tStartRound = 1;
-let tSpeedMult = 1.0;         // [1.10.1] pending value — applied at next startRound()
-let _appliedSpeedMult = 1.0; // [1.10.2-fix] committed value, only updates at round boundaries
-let fabPaused = false;        // [1.10.2]
-// [2.0-pause] player-facing pause (js/pause.js). Lives here, not in pause.js, because
-// js/sdk.js's visibilitychange handler reads it — a tab switch during page load would hit
-// the temporal dead zone if the binding were declared in a later-loading file.
-let _pausedByPlayer = false;
+// [2.0-notester] The tester mode is gone: no PIN screen, no FAB, no noclip/slow/freeze/speed
+// overrides, no sandbox. Everything that used to branch on it now has exactly one path.
+// [2.0-pause] Both pause flags live here, not in pause.js, because js/sdk.js's visibilitychange
+// handler reads them — a tab switch during page load would hit the temporal dead zone if the
+// bindings were declared in a later-loading file.
+let gamePaused = false;       // frozen by an ad or by the player
+let _pausedByPlayer = false;  // ...and the player-facing overlay is up
 let _phaseFn = null;          // [1.10.2] currently pending phase callback
 let _phaseFiresAt = 0;        // [1.10.2] absolute ms when phaseTimer fires
 let _phaseRemainingMs = 0;    // [1.10.2] stored on pause
@@ -152,18 +143,18 @@ let roundCoinMult = 1;         // coin/crystal multiplier this round
 let roundSpeedMult = 1;        // obstacle speed multiplier this round (>1 = faster)
 let comboStep = 1;             // combo increment per survived round
 let boardTear = null;          // [2.0-s3.2] active Grid Glitch tear config (or null)
-// [2.0-s3.1] Custom Game sandbox (tester) + hazard-enable helpers
-let customGame = false;
 let tutorialActive = false; // [2.0-s4h] guided live-run tutorial on the real engine
 let tutBeat = 0;            // [2.0-s4h] current scripted tutorial beat (0-based)
 let _tutLaserRow = -1;      // [2.0-s4h-r1] row the beat-2 laser is charging on
 let _tutBlock    = null;    // [2.0-s4h-r1] {x,y} of the beat-3 block
 let _tutAwaiting = null;    // [2.0-s4h-r1] 'escape' | 'dodge' | null
-let customCfg = { lasers:false, asteroids:false, blocks:false, blackhole:false };
-function _lasersEnabled()    { return customGame ? customCfg.lasers    : true; }
-function _blocksEnabled()    { return customGame ? customCfg.blocks    : (currentWorld !== 2); } // no blocks in W2
-function _asteroidsEnabled() { return customGame ? customCfg.asteroids : (currentWorld === 2); }
-function _blackHoleEnabled() { return customGame ? customCfg.blackhole : (currentWorld === 2); }
+// [2.0-notester] Which hazards a run uses. These were switches once — the Custom Game sandbox let
+// the tester turn each one on or off — so every hazard site still asks rather than testing the
+// world inline. Kept as functions: the question is the same, the sandbox answer is just gone.
+function _lasersEnabled()    { return true; }
+function _blocksEnabled()    { return currentWorld !== 2; } // no blocks in W2
+function _asteroidsEnabled() { return currentWorld === 2; }
+function _blackHoleEnabled() { return currentWorld === 2; }
 let timeAttackEndTime = 0;
 let _dailyRng = null;
 let bestTimeAttack = parseInt(localStorage.getItem('cm_best_timeattack') || '0');

@@ -10,7 +10,7 @@
 const INTERSTITIAL_CHANCE      = 0.30;  // ~30% of deaths, when nothing else blocks it
 const INTERSTITIAL_COOLDOWN_MS = 90000; // never two ads inside 90s, however unlucky the rolls get
 
-function _adsAvailable() { return _cgReady && _cgSdk && !testerActive; }
+function _adsAvailable() { return _cgReady && _cgSdk; }
 
 // Every ad of either kind stamps this, so the cooldown covers rewarded→interstitial too: a player
 // who just chose to watch an ad for a revive doesn't get an unsolicited one right behind it.
@@ -105,7 +105,7 @@ function offerAdBox() {
 // timestamp that an ad break would eat into.
 function offerReviveAd() {
   if (!_adsAvailable()) return;
-  if (reviveUsedThisGame || customGame || tutorialActive || gameMode !== null) return;
+  if (reviveUsedThisGame || tutorialActive || gameMode !== null) return;
   const btn = _deathReviveBtn();
   if (!btn) return;
   btn.style.display = '';
@@ -118,7 +118,7 @@ function offerReviveAd() {
         _hideDeathAdButtons();
         deathOverlay.classList.remove('show');
         alive = true;
-        // fabPauseGame() early-returns while dead, so the ad break was never excluded from the
+        // pauseGame() early-returns while dead, so the ad break was never excluded from the
         // survival clock. Rewind virtual time to the exact moment of death instead: the run keeps
         // the seconds it earned and loses the ones spent watching.
         _virtAccum = parseFloat(lastTime) * 1000;
@@ -143,7 +143,7 @@ function offerReviveAd() {
 // and never in the modes that are meant to run clean start-to-finish.
 function maybeShowInterstitial(onDone) {
   if (!_adsAvailable())                                             { onDone(); return; }
-  if (customGame || tutorialActive)                                 { onDone(); return; }
+  if (tutorialActive)                                               { onDone(); return; }
   if (gameMode === 'hardcore' || gameMode === 'daily')              { onDone(); return; }
   if (reviveUsedThisGame)                                           { onDone(); return; } // already watched one this game
   if (Date.now() - _lastInterstitialAt < INTERSTITIAL_COOLDOWN_MS)  { onDone(); return; } // no ad chains on repeated quick deaths

@@ -45,7 +45,6 @@ const deathStats   = document.getElementById('death-stats');
 const screenStats = document.getElementById('screen-stats');
 const screenPin    = document.getElementById('screen-pin');
 const menuCoinsEl = document.getElementById('menu-coins');
-const hudFpsEl = document.getElementById('hud-fps');
 const _tutCoachEl = document.getElementById('tut-coach');
 const _tutSkipEl  = document.getElementById('tut-skip');
 const resetDialog = document.getElementById('reset-dialog');

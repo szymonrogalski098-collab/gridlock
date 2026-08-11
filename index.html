@@ -10,7 +10,7 @@
      itself. Off CrazyGames the file simply isn't there (or reports a disabled environment) and
      js/sdk.js falls back to standalone — see the environment gate there. -->
 <script src="https://sdk.crazygames.com/crazygames-sdk-v3.js"></script>
-<link rel="stylesheet" href="cube_master.css?v=2.0-boardfix">
+<link rel="stylesheet" href="cube_master.css?v=2.0-clean">
 </head>
 <body>
 <div id="intro-overlay"></div>
@@ -60,12 +60,6 @@
       </span>
       <span class="menu-bar-label">STATS</span><!-- [1.9] -->
     </button>
-    <button class="menu-bar-btn" id="bar-tester">
-      <span class="menu-bar-icon"><!-- [2.0-deemoji] gear -->
-        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="6.2"/><circle cx="12" cy="12" r="2.5"/><path d="M18.2 12h2.4M3.4 12h2.4M12 18.2v2.4M12 3.4v2.4M16.4 16.4l1.7 1.7M5.9 5.9l1.7 1.7M7.6 16.4l-1.7 1.7M18.1 5.9l-1.7 1.7"/></svg>
-      </span>
-      <span class="menu-bar-label">TESTER</span>
-    </button>
     <button class="menu-bar-btn" id="bar-reset">
       <span class="menu-bar-icon"><!-- [2.0-deemoji] trash -->
         <svg viewBox="0 0 24 24"><line x1="3.6" y1="6.2" x2="20.4" y2="6.2"/><path d="M5.9 6.2h12.2l-.9 13a1.5 1.5 0 0 1-1.5 1.4H8.3a1.5 1.5 0 0 1-1.5-1.4Z"/><path d="M9.3 6.2V4.4a1.4 1.4 0 0 1 1.4-1.4h2.6a1.4 1.4 0 0 1 1.4 1.4v1.8"/><line x1="10.4" y1="10.2" x2="10.4" y2="16.8"/><line x1="13.6" y1="10.2" x2="13.6" y2="16.8"/></svg>
@@ -74,29 +68,6 @@
     </button>
   </div>
 </div>
-
-<!-- PIN SCREEN --> <!-- [1.9.1] translated -->
-<div id="screen-pin" class="screen-base">
-  <div id="pin-title"><svg class="ui-ico ui-ico-lead" viewBox="0 0 24 24"><!-- [2.0-deemoji] padlock, same shape as the shop lock --><rect x="5" y="10.5" width="14" height="10" rx="2"/><path d="M8.2 10.5V7.8a3.8 3.8 0 0 1 7.6 0v2.7"/><circle cx="12" cy="15.5" r="1.3"/></svg>ACCESS CODE</div><!-- [1.9] -->
-  <div id="pin-display">____</div>
-  <div id="pin-pad">
-    <button class="pin-btn" data-v="1">1</button>
-    <button class="pin-btn" data-v="2">2</button>
-    <button class="pin-btn" data-v="3">3</button>
-    <button class="pin-btn" data-v="4">4</button>
-    <button class="pin-btn" data-v="5">5</button>
-    <button class="pin-btn" data-v="6">6</button>
-    <button class="pin-btn" data-v="7">7</button>
-    <button class="pin-btn" data-v="8">8</button>
-    <button class="pin-btn" data-v="9">9</button>
-    <button class="pin-btn pin-btn-del" id="pin-del">⌫</button>
-    <button class="pin-btn" data-v="0">0</button>
-    <button class="pin-btn pin-btn-ok" id="pin-ok">OK</button>
-  </div>
-  <div id="pin-error"></div>
-  <button id="pin-back">← BACK</button><!-- [1.9] -->
-</div>
-
 
 <!-- STATISTICS SCREEN --> <!-- [1.9.1] translated -->
 <div id="screen-stats" class="screen-base">
@@ -261,7 +232,6 @@
     <div id="hud-timer" style="display:none"><svg class="hud-ico" viewBox="0 0 24 24"><!-- stopwatch --><circle cx="12" cy="13.5" r="7.5"/><polyline points="12,9 12,13.5 15,15.5"/><line x1="9.5" y1="2.5" x2="14.5" y2="2.5"/><line x1="12" y1="2.5" x2="12" y2="6"/></svg> <span id="hud-timer-val"></span></div><!-- [1.10] -->
     <div id="hud-combo" style="display:none"><svg class="hud-ico" viewBox="0 0 24 24"><!-- flame --><path d="M12 21.4c3.5 0 6-2.4 6-5.6 0-4.4-4.3-6-4.3-9.6 0-1.3.5-2.4 1.1-3.2-4 .9-7.3 4.3-7.3 8.6 0 1.7.7 3 .7 4.1 0 1-.7 1.7-1.5 1.7 0 2.3 2.3 4 5.3 4Z"/></svg> <span id="hud-combo-val"></span></div><!-- [1.9.2] -->
     <div id="hud-gridlock" style="display:none"><svg class="hud-ico" viewBox="0 0 24 24"><!-- bolt --><path d="M13.4 2.2 4.8 13.6h5.6l-.8 8.2 8.6-11.4h-5.6Z"/></svg> <span id="hud-gridlock-val"></span></div><!-- [1.12] -->
-    <div id="hud-fps"></div>
     <button id="hud-pause-btn" aria-label="Pause"><!-- [2.0-pause] same entry point as Escape -->
       <svg class="hud-ico" viewBox="0 0 24 24"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>
     </button>
@@ -280,16 +250,6 @@
   <div id="round-mod-banner"></div><!-- [2.0-s3] -->
   <div id="tut-coach" style="display:none"></div><!-- [2.0-s4h] one-line coachmark bubble -->
   <button id="tut-skip" style="display:none">Skip ✕</button><!-- [2.0-s4h] corner skip, whole tutorial -->
-</div>
-
-<!-- [1.10.1] Tester FAB -->
-<div id="tester-fab" style="display:none">
-  <button id="tester-fab-btn">⚙</button>
-  <div id="tester-fab-menu" class="fab-hidden"></div>
-  <div id="fab-feedback" style="display:none;position:absolute;bottom:56px;right:0;
-    background:rgba(0,200,255,0.15);border:1px solid #0cf;border-radius:8px;
-    padding:6px 14px;color:#0cf;font-size:12px;letter-spacing:1px;
-    white-space:nowrap;pointer-events:none;z-index:1;"></div>
 </div>
 
 <!-- [2.0-pause] PAUSE OVERLAY — same skeleton as #death-overlay, but visually distinct so the
@@ -362,27 +322,26 @@
      declared before top-level code that runs at load time uses it. Hence:
      constants -> state -> dom -> everything else -> main last.
      main.js holds all the event wiring and the bootstrap, so it must stay last. -->
-<script src="js/constants.js?v=2.0-boardfix"></script>
-<script src="js/state.js?v=2.0-boardfix"></script>
-<script src="js/dom.js?v=2.0-boardfix"></script>
-<script src="js/persistence.js?v=2.0-boardfix"></script>
-<script src="js/skins.js?v=2.0-boardfix"></script>
-<script src="js/sound.js?v=2.0-boardfix"></script>
-<script src="js/board-render.js?v=2.0-boardfix"></script>
-<script src="js/hazards.js?v=2.0-boardfix"></script>
-<script src="js/rounds.js?v=2.0-boardfix"></script>
-<script src="js/bosses.js?v=2.0-boardfix"></script>
-<script src="js/world2.js?v=2.0-boardfix"></script>
-<script src="js/tester.js?v=2.0-boardfix"></script>
-<script src="js/screens.js?v=2.0-boardfix"></script>
-<script src="js/shop.js?v=2.0-boardfix"></script>
-<script src="js/lootbox.js?v=2.0-boardfix"></script>
-<script src="js/missions.js?v=2.0-boardfix"></script>
-<script src="js/tutorial.js?v=2.0-boardfix"></script>
-<script src="js/capybara.js?v=2.0-boardfix"></script>
-<script src="js/sdk.js?v=2.0-boardfix"></script><!-- [2.0-sdk] after sound.js (audioCtx) and tester.js (fabPause/ResumeGame) -->
-<script src="js/pause.js?v=2.0-boardfix"></script><!-- [2.0-pause] after tester.js, screens.js and sdk.js -->
-<script src="js/ads-rewards.js?v=2.0-boardfix"></script><!-- [2.0-ads] after sdk.js (ad helpers) and lootbox.js (_resolveBoxOpen) -->
-<script src="js/main.js?v=2.0-boardfix"></script>
+<script src="js/constants.js?v=2.0-clean"></script>
+<script src="js/state.js?v=2.0-clean"></script>
+<script src="js/dom.js?v=2.0-clean"></script>
+<script src="js/persistence.js?v=2.0-clean"></script>
+<script src="js/skins.js?v=2.0-clean"></script>
+<script src="js/sound.js?v=2.0-clean"></script>
+<script src="js/board-render.js?v=2.0-clean"></script>
+<script src="js/hazards.js?v=2.0-clean"></script>
+<script src="js/rounds.js?v=2.0-clean"></script>
+<script src="js/bosses.js?v=2.0-clean"></script>
+<script src="js/world2.js?v=2.0-clean"></script>
+<script src="js/screens.js?v=2.0-clean"></script>
+<script src="js/shop.js?v=2.0-clean"></script>
+<script src="js/lootbox.js?v=2.0-clean"></script>
+<script src="js/missions.js?v=2.0-clean"></script>
+<script src="js/tutorial.js?v=2.0-clean"></script>
+<script src="js/capybara.js?v=2.0-clean"></script>
+<script src="js/pause.js?v=2.0-clean"></script><!-- [2.0-pause] pauseGame/resumeGame — sdk.js and ads-rewards.js both call them -->
+<script src="js/sdk.js?v=2.0-clean"></script><!-- [2.0-sdk] after sound.js (audioCtx) and pause.js -->
+<script src="js/ads-rewards.js?v=2.0-clean"></script><!-- [2.0-ads] after sdk.js (ad helpers) and lootbox.js (_resolveBoxOpen) -->
+<script src="js/main.js?v=2.0-clean"></script>
 </body>
 </html>

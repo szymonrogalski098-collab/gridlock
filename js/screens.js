@@ -64,14 +64,9 @@ function showMenu() {
   deathOverlay.classList.remove('show');
   clearTimeout(phaseTimer);
   alive = false;
-  fabPaused = false; // [1.10.2]
-  customGame = false; // [2.0-s3.1] leave the sandbox on returning to menu
+  gamePaused = false; // [1.10.2]
   tutorialActive = false; // [2.0-s4h] defensive: never linger into the menu
   asteroids = []; clearTimeout(asteroidTimer); asteroidTimer = null; _resetBlackHole(); // [2.0-s2]
-  // [2.0-w1fix] no snapshot restore here — tester progress survives every trip to the menu; only exitTesterMode() rolls back
-  // refresh bottom bar
-  const barTester = document.getElementById('bar-tester');
-  if (barTester) barTester.classList.toggle('active', testerUnlocked);
   // [2.0-s1] world-switch button — hidden until VOID KING defeated
   const wsBtn = document.getElementById('btn-world-switch');
   if (wsBtn) {
@@ -126,11 +121,4 @@ function renderStats() { // [2.0-s3] fill the stat screen from the selected worl
 function formatTimePlayed(s) { // [1.9.2]
   const h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60);
   return h > 0 ? `${h}h ${m}m` : `${m}m`;
-}
-
-function showPin() {
-  showScreen('screen-pin');
-  pinBuffer='';
-  updatePinDisplay();
-  document.getElementById('pin-error').textContent='';
 }

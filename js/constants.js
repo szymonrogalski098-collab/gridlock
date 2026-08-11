@@ -172,7 +172,7 @@ const CUBEK2_LINES = [ // [2.0-s1]
   "You'll face Solar Flares and Asteroids instead of lasers. Master the Black Hole to teleport across the grid.",
   "Void Crystals are the currency here. Spend them wisely in the Void Shop. Good luck — you'll need it."
 ];
-const SCREENS = ['screen-start','screen-stats','screen-pin','screen-missions','screen-modes','screen-world-choice','screen-cubek2','app']; // [1.10] [1.10.1] removed screen-tester [2.0-s1] world screens [2.0-s4h] removed screen-tutorial
+const SCREENS = ['screen-start','screen-stats','screen-missions','screen-modes','screen-world-choice','screen-cubek2','app']; // [2.0-s1] world screens [2.0-s4h] no screen-tutorial [2.0-notester] no screen-pin
 const MISSION_POOL = [ // [1.9] all names translated
   { id:'lasers_100',   type:'lasers_dodged',   target:100,  name:'Dodge 100 lasers'                 },
   { id:'lasers_250',   type:'lasers_dodged',   target:250,  name:'Dodge 250 lasers'                 },
