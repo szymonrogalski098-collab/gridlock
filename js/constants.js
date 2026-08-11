@@ -5,6 +5,11 @@
 // CONSTANTS
 // ══════════════════════════════════════════════════
 const N = 16, DASH_RANGE = 5, MAX_LASERS = 12;
+// [2.0-boardfix] Floor for the board's pixel size. buildBoard() derives the size from the viewport
+// and the viewport can measure ~0 during the first synchronous layout of a cold load, which used to
+// produce a NEGATIVE board. 160px is 10px per cell — cramped but drawable, and no real viewport
+// ever reaches down to it (it needs a window under 280px tall).
+const MIN_BOARD_PX = 160;
 const CHARGE_START = 1100, CHARGE_MIN = 500, CHARGE_STEP = 50;
 const FIRE_MS = 700, GAP_MS = 850;
 const BLOCK_INTERVAL = 3, MAX_BLOCKS = 12;
