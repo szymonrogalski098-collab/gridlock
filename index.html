@@ -10,7 +10,7 @@
      itself. Off CrazyGames the file simply isn't there (or reports a disabled environment) and
      js/sdk.js falls back to standalone — see the environment gate there. -->
 <script src="https://sdk.crazygames.com/crazygames-sdk-v3.js"></script>
-<link rel="stylesheet" href="cube_master.css?v=2.0-clarity">
+<link rel="stylesheet" href="cube_master.css?v=2.0-noesc">
 </head>
 <body>
 <div id="intro-overlay"></div>
@@ -262,7 +262,7 @@
     <div id="hud-combo" style="display:none"><svg class="hud-ico" viewBox="0 0 24 24"><!-- flame --><path d="M12 21.4c3.5 0 6-2.4 6-5.6 0-4.4-4.3-6-4.3-9.6 0-1.3.5-2.4 1.1-3.2-4 .9-7.3 4.3-7.3 8.6 0 1.7.7 3 .7 4.1 0 1-.7 1.7-1.5 1.7 0 2.3 2.3 4 5.3 4Z"/></svg> <span id="hud-combo-val"></span></div><!-- [1.9.2] -->
     <div id="hud-gridlock" style="display:none"><svg class="hud-ico" viewBox="0 0 24 24"><!-- bolt --><path d="M13.4 2.2 4.8 13.6h5.6l-.8 8.2 8.6-11.4h-5.6Z"/></svg> <span id="hud-gridlock-val"></span></div><!-- [1.12] -->
     <div id="hud-fps"></div>
-    <button id="hud-pause-btn" aria-label="Pause"><!-- [2.0-pause] same entry point as Escape -->
+    <button id="hud-pause-btn" aria-label="Pause"><!-- [2.0-pause] pauses the game -->
       <svg class="hud-ico" viewBox="0 0 24 24"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>
     </button>
   </div>
@@ -354,26 +354,26 @@
      declared before top-level code that runs at load time uses it. Hence:
      constants -> state -> dom -> everything else -> main last.
      main.js holds all the event wiring and the bootstrap, so it must stay last. -->
-<script src="js/constants.js?v=2.0-clarity"></script>
-<script src="js/state.js?v=2.0-clarity"></script>
-<script src="js/dom.js?v=2.0-clarity"></script>
-<script src="js/persistence.js?v=2.0-clarity"></script>
-<script src="js/skins.js?v=2.0-clarity"></script>
-<script src="js/sound.js?v=2.0-clarity"></script>
-<script src="js/board-render.js?v=2.0-clarity"></script>
-<script src="js/hazards.js?v=2.0-clarity"></script>
-<script src="js/rounds.js?v=2.0-clarity"></script>
-<script src="js/bosses.js?v=2.0-clarity"></script>
-<script src="js/world2.js?v=2.0-clarity"></script>
-<script src="js/tester.js?v=2.0-clarity"></script>
-<script src="js/screens.js?v=2.0-clarity"></script>
-<script src="js/shop.js?v=2.0-clarity"></script>
-<script src="js/lootbox.js?v=2.0-clarity"></script>
-<script src="js/missions.js?v=2.0-clarity"></script>
-<script src="js/tutorial.js?v=2.0-clarity"></script>
-<script src="js/capybara.js?v=2.0-clarity"></script>
-<script src="js/sdk.js?v=2.0-clarity"></script><!-- [2.0-sdk] after sound.js (audioCtx) and tester.js (fabPause/ResumeGame) -->
-<script src="js/pause.js?v=2.0-clarity"></script><!-- [2.0-pause] after tester.js, screens.js and sdk.js -->
-<script src="js/main.js?v=2.0-clarity"></script>
+<script src="js/constants.js?v=2.0-noesc"></script>
+<script src="js/state.js?v=2.0-noesc"></script>
+<script src="js/dom.js?v=2.0-noesc"></script>
+<script src="js/persistence.js?v=2.0-noesc"></script>
+<script src="js/skins.js?v=2.0-noesc"></script>
+<script src="js/sound.js?v=2.0-noesc"></script>
+<script src="js/board-render.js?v=2.0-noesc"></script>
+<script src="js/hazards.js?v=2.0-noesc"></script>
+<script src="js/rounds.js?v=2.0-noesc"></script>
+<script src="js/bosses.js?v=2.0-noesc"></script>
+<script src="js/world2.js?v=2.0-noesc"></script>
+<script src="js/tester.js?v=2.0-noesc"></script>
+<script src="js/screens.js?v=2.0-noesc"></script>
+<script src="js/shop.js?v=2.0-noesc"></script>
+<script src="js/lootbox.js?v=2.0-noesc"></script>
+<script src="js/missions.js?v=2.0-noesc"></script>
+<script src="js/tutorial.js?v=2.0-noesc"></script>
+<script src="js/capybara.js?v=2.0-noesc"></script>
+<script src="js/sdk.js?v=2.0-noesc"></script><!-- [2.0-sdk] after sound.js (audioCtx) and tester.js (fabPause/ResumeGame) -->
+<script src="js/pause.js?v=2.0-noesc"></script><!-- [2.0-pause] after tester.js, screens.js and sdk.js -->
+<script src="js/main.js?v=2.0-noesc"></script>
 </body>
 </html>

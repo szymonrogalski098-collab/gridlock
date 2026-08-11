@@ -1,4 +1,4 @@
-// [MODULE] Player-facing pause — Escape key / HUD button, RESUME + MENU overlay.
+// [MODULE] Player-facing pause — HUD button, RESUME + MENU overlay.
 // [MODULE] Reuses the tester's fabPauseGame/fabResumeGame, which already freeze virtual time,
 // [MODULE] the phase timer, asteroids, the black-hole teleport and the combo flash with full
 // [MODULE] elapsed-time accounting. `_pausedByPlayer` itself is declared in state.js.
@@ -7,7 +7,7 @@
 const _pauseOverlayEl = document.getElementById('pause-overlay');
 const _hudPauseBtn    = document.getElementById('hud-pause-btn');
 
-function _openPauseOverlay() { // [2.0-pause] single entry point for both Escape and the HUD button
+function _openPauseOverlay() { // [2.0-pause] entry point for the HUD pause button
   if (!alive || _pausedByPlayer) return;
   if (tutorialActive || customGame) return;   // tutorial drives scripted beats; sandbox is tester-only
   if (fabPaused) return;                      // tester's FAB pause already owns the freeze
@@ -32,13 +32,6 @@ function _closePauseOverlay(toMenu) {
     playUISound('click');
   }
 }
-
-// No other keydown listener exists anywhere in js/, so Escape is uncontested.
-document.addEventListener('keydown', (e) => {
-  if (e.key !== 'Escape') return;
-  if (_pausedByPlayer) _closePauseOverlay(false);
-  else                 _openPauseOverlay();
-});
 
 document.getElementById('pause-resume-btn').addEventListener('click', () => _closePauseOverlay(false));
 document.getElementById('pause-menu-btn').addEventListener('click',   () => _closePauseOverlay(true));
