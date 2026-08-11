@@ -6,6 +6,13 @@
 // ══════════════════════════════════════════════════
 let cells = [], cube = {x:8,y:8}, round = 0, dashesLeft = 2;
 let sessionCoinsEarned = 0;  // coins earned this game
+// [2.0-ads] Per-game bookkeeping for the rewarded revive. A revive makes die() a repeatable event,
+// so anything that must count exactly once per game needs a memory of what it already banked.
+let reviveUsedThisGame  = false; // one revive per startGame()
+let _timeBankedThisGame = 0;     // seconds already handed to addTimePlayed() this game
+let _recBonusPaidThisGame = 0;   // record bonus already paid this game (keeps it from compounding)
+let _lastRecBonus = 0;           // record bonus of the death currently on screen (for _earnRows re-render)
+let _lastInterstitialAt = 0;     // timestamp of the last ad of ANY kind — throttles interstitials
 let hardMode = false;
 let _prevHudCoins = -1, _prevHudRound = -1, _prevCombo = 0; // [1.9.3]
 let testerUnlocked = false;
@@ -56,6 +63,8 @@ let showBoardGrid = localStorage.getItem('cm_nogrid') !== '1'; // [1.9.1] bug #8
 
 // [2.0-s5b] Void Shop loot box engine — state
 let box_lastFreeDate = localStorage.getItem('cm_world2_box_date') || '';
+// [2.0-ads] rewarded-ad box: one per day, independent of the free box and the 2/day buy limit
+let box_adWatchedDate = localStorage.getItem('cm_world2_box_ad_date') || '';
 let box_boughtToday  = parseInt(localStorage.getItem('cm_world2_box_bought') || '0');
 let box_boughtDate   = localStorage.getItem('cm_world2_box_bought_date') || '';
 let voidSkinsOwned  = JSON.parse(localStorage.getItem('cm_world2_skins_owned')  || '[]');
