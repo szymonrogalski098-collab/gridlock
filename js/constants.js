@@ -4,6 +4,13 @@
 // ══════════════════════════════════════════════════
 // CONSTANTS
 // ══════════════════════════════════════════════════
+// [2.0-adgate] The single switch for everything ad-shaped: the two game-over offers, the Void Shop
+// ad box and the random interstitial. OFF because the game ships under Basic Launch, where ads are
+// not served at all — so every ad affordance would be a control that cannot work, which is the
+// worst thing to hand a reviewer. The integration underneath is complete and tested; flip this to
+// true on Full Launch and the whole feature appears, with no other change anywhere.
+const ADS_ENABLED = false;
+
 const N = 16, DASH_RANGE = 5, MAX_LASERS = 12;
 // [2.0-boardfix] Floor for the board's pixel size. buildBoard() derives the size from the viewport
 // and the viewport can measure ~0 during the first synchronous layout of a cold load, which used to

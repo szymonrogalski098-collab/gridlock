@@ -16,7 +16,10 @@ const INTERSTITIAL_COOLDOWN_MS = 90000; // never two ads inside 90s, however unl
 // bad first impression and exactly the kind of dead control a store review flags.
 let _adsUnavailable = false;
 
-function _adsAvailable() { return _cgReady && _cgSdk && !_adsUnavailable; }
+// ADS_ENABLED (js/constants.js) is the launch-stage gate; _adsUnavailable is the runtime one. Both
+// have to say yes before any ad affordance is drawn, and maybeShowInterstitial() checks the same
+// pair — so a single `false` in constants.js removes ads from the build entirely.
+function _adsAvailable() { return ADS_ENABLED && _cgReady && _cgSdk && !_adsUnavailable; }
 
 // Shared handling for a rewarded ad that didn't pay out.
 //   'unavailable' — the ad never appeared. Nothing is coming this session; retire the offers.
