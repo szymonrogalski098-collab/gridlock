@@ -360,12 +360,19 @@ function _resetTesterSettings() { // [1.10.2]
 
 // [2.0-w1fix] New record ⇒ +200% of what the run earned, so the player walks away with 3× the payout.
 // Folded back into sessionCoinsEarned/sessionCrystalsEarned so the death-overlay counter shows the full total.
+// [2.0-ads] With the rewarded revive, one game can reach die() twice, and the second death would
+// otherwise compute its bonus off a session total that already contains the first bonus — paying a
+// bonus on a bonus. So the payout is expressed as a target ("total bonus this game = 2× raw
+// earnings") and only the shortfall is handed over. Without a revive _recBonusPaidThisGame is 0 and
+// this reduces to exactly the old bonus = base * 2.
 function _awardRecordBonus() {
-  const base  = currentWorld === 2 ? sessionCrystalsEarned : sessionCoinsEarned;
-  const bonus = base * 2;
+  const total = currentWorld === 2 ? sessionCrystalsEarned : sessionCoinsEarned;
+  const raw   = total - _recBonusPaidThisGame;
+  const bonus = raw * 2 - _recBonusPaidThisGame;
   if (bonus <= 0) return 0;
   if (currentWorld === 2) { crystals += bonus; sessionCrystalsEarned += bonus; }
   else                    { coins    += bonus; sessionCoinsEarned    += bonus; }
+  _recBonusPaidThisGame += bonus;
   addCurrencyTotal(bonus); // keep the lifetime stat consistent with the wallet
   return bonus;
 }
@@ -373,18 +380,24 @@ function _awardRecordBonus() {
 // [2.0-clarity] The earnings block on the game-over screen, as an itemised sum that adds up on
 // screen instead of two numbers the player has to reconcile. #_dc stays the animated total, so
 // animateCounter keeps working unchanged. With no record bonus it collapses to a single row.
-function _earnRows(recBonus) {
+// [2.0-ads] adBonus is the rewarded-ad doubling (js/ads-rewards.js), added as its own row so the
+// column still adds up on screen. The multiplier is derived from base rather than hardcoded to 3×,
+// because with both bonuses the total genuinely is 6× the base — a stale "3×" over a doubled total
+// would be the one number on this screen the player could catch out.
+function _earnRows(recBonus, adBonus = 0) {
   const label = currentWorld === 2 ? 'Crystals' : 'Coins';
   const total = currentWorld === 2 ? sessionCrystalsEarned : sessionCoinsEarned;
-  const base  = total - recBonus;
-  if (recBonus <= 0) {
-    return `<div class="death-earn"><div class="de-row de-total">`
+  const base  = total - recBonus - adBonus;
+  if (recBonus <= 0 && adBonus <= 0) {
+    return `<div class="death-earn" id="death-earn-block"><div class="de-row de-total">`
          + `<span>${label} earned</span><b>+<span id="_dc">0</span> ${curIcon()}</b></div></div>`;
   }
-  return `<div class="death-earn">`
+  const mult = base > 0 ? Math.round(total / base) : 0;
+  return `<div class="death-earn" id="death-earn-block">`
        + `<div class="de-row"><span>${label} earned</span><b>+${base}</b></div>`
-       + `<div class="de-row de-bonus"><span>Record bonus</span><b>+${recBonus}</b></div>`
-       + `<div class="de-row de-total"><span>Total <em>3×</em></span>`
+       + (recBonus > 0 ? `<div class="de-row de-bonus"><span>Record bonus</span><b>+${recBonus}</b></div>` : '')
+       + (adBonus  > 0 ? `<div class="de-row de-bonus de-ad"><span>Ad bonus ×2</span><b>+${adBonus}</b></div>` : '')
+       + `<div class="de-row de-total"><span>Total${mult > 1 ? ` <em>${mult}×</em>` : ''}</span>`
        + `<b>+<span id="_dc">0</span> ${curIcon()}</b></div>`
        + `</div>`;
 }
@@ -399,11 +412,13 @@ function _timeAttackOver() { // [1.10]
   if (_newRecord) { bestTimeAttack = round; localStorage.setItem('cm_best_timeattack', bestTimeAttack); }
   if (_newRecord) playRecord();
   const _recBonus = (_newRecord && !testerActive) ? _awardRecordBonus() : 0; // [2.0-w1fix]
+  _lastRecBonus = _recBonusPaidThisGame; // [2.0-ads] no revive in Time Attack, so this equals _recBonus
   if (currentWorld === 2) w2Games++; else gamesPlayed++; // [2.0-s3] per world
   save();
   const titleEl = document.getElementById('death-title');
   if (titleEl) titleEl.textContent = "TIME'S UP!";
   setTimeout(() => {
+    _resetDeathAdButtons(); // [2.0-ads] no ads on this path — make sure none linger from a past death
     deathStats.innerHTML =
       `Time Attack — 60 seconds<br>`+ // [2.0-deemoji]
       `${bestComboThisSession >= 5 ? 'Best combo: <b>x'+bestComboThisSession+'</b><br>' : ''}`+
@@ -420,6 +435,11 @@ function _timeAttackOver() { // [1.10]
 function die(reason) {
   if (customGame) return; // [2.0-s3.2] sandbox: player is immortal
   if (tutorialActive) return; // [2.0-s4h] tutorial: player is immortal (single robust funnel)
+  // [2.0-ads] One death, one die(). Already reachable twice today: startRound()'s fire phase runs
+  // `checkDeathByLaser(); checkDeathByBlock();` as two statements, so a laser death is followed by a
+  // block death on the same frame, double-counting gamesPlayed and paying the record bonus twice.
+  // The rewarded revive makes that path routine, so the guard is load-bearing now.
+  if (!alive) return;
   if (bossRound) _cleanupBoss(); // [1.11]
   if (gridlockActive) _endGridlockMode(false); // [1.12]
   _resetRoundMods(); // [2.0-s3]
@@ -464,8 +484,11 @@ function die(reason) {
     else                    { if (round > bestRound)   bestRound   = round; }
     if (_newRecord) playRecord(); // [1.9.2]
     recordBestCombo(bestComboThisSession); // [2.0-s3] per world
-    addTimePlayed(Math.round(_lastT)); // [2.0-s3]
-    if (currentWorld === 2) w2Games++; else gamesPlayed++; // [2.0-s3]
+    // [2.0-ads] After a revive this is the game's SECOND die(), and _lastT is time since the game
+    // started, not since the revive — so bank the delta, and count the game itself only once.
+    addTimePlayed(Math.max(0, Math.round(_lastT) - _timeBankedThisGame)); // [2.0-s3]
+    _timeBankedThisGame = Math.round(_lastT);
+    if (!reviveUsedThisGame) { if (currentWorld === 2) w2Games++; else gamesPlayed++; } // [2.0-s3][2.0-ads]
     // unlock prestige skins for round records
     for (const s of SKINS.filter(s=>s.unlock)) {
       if (round >= s.unlock && !owned.includes(s.id)) { owned.push(s.id); newUnlock = s; }
@@ -480,10 +503,18 @@ function die(reason) {
     }
   }
   // [2.0-w1fix] +200% payout on any record this run beat — per-world round best, or the mode's own best
-  const _recBonus = (!testerActive && (_newRecord || _modeRecord)) ? _awardRecordBonus() : 0;
+  if (!testerActive && (_newRecord || _modeRecord)) _awardRecordBonus();
+  // [2.0-ads] The screen itemises the whole game, not just this death: after a revive the earlier
+  // bonus is still sitting in sessionCoinsEarned, so the row has to show the game total or the
+  // column stops adding up. js/ads-rewards.js re-renders from the same value.
+  _lastRecBonus = _recBonusPaidThisGame;
   save();
 
-  setTimeout(()=>{
+  // [2.0-ads] Everything above has already run and saved — only the MOMENT the overlay appears is
+  // deferred, by an interstitial that shows roughly 30% of the time. maybeShowInterstitial() calls
+  // straight through when there's no SDK, so this is a no-op off CrazyGames.
+  setTimeout(()=>maybeShowInterstitial(()=>{
+    _resetDeathAdButtons(); // [2.0-ads] hide last death's ad buttons before the offers re-evaluate
     deathStats.innerHTML = // [1.9.2]
       // [2.0-deemoji] glyphs stripped — a dense 14px stat block reads cleaner as plain text.
       // The Hard Mode flame stays (matches the HARD button); NEW BEST's star is a dingbat.
@@ -496,7 +527,7 @@ function die(reason) {
       // player had to work out that 231 = 77 × 3 and 154 = 77 × 2. Now it's an itemised sum that
       // adds up on screen. The "3×" label sits on the Total, because the total genuinely is 3× the
       // base — putting it on the bonus row would have implied 154 = 77 × 3, which is wrong.
-      _earnRows(_recBonus)+
+      _earnRows(_lastRecBonus)+
       `Best time: <b>${currentWorld===2?w2BestTime:bestTime}s</b> &nbsp;|&nbsp; Best rounds: <b>${currentWorld===2?w2BestRound:bestRound}</b>`+ // [2.0-s3] per world
       (_newRecord ? `<br><span class="new-best">★ NEW BEST!</span>` : '')+ // [1.9.3]
       (gameMode==='timeattack' ? `<br>Best (Time Attack): <b>${bestTimeAttack} rounds</b>` : '')+ // [1.10]
@@ -510,5 +541,9 @@ function die(reason) {
     const retryBtn = document.getElementById('btn-retry');
     if (gameMode === 'hardcore' || gameMode === 'daily') retryBtn.style.display = 'none';
     else retryBtn.style.display = '';
-  }, 400);
+    // [2.0-ads] Offered last, on a finished overlay, so the buttons never flash over a half-built
+    // screen. Both self-gate on the SDK; with none present neither ever becomes visible.
+    offerReviveAd();
+    offerDeathAdBonus();
+  }), 400);
 }
