@@ -1,6 +1,5 @@
 // [MODULE] Entry point - loaded LAST. Bootstrap, all event wiring, startGame,
-// [MODULE] background particles, the FPS counter and the menu coin counter.
-// [MODULE] Split out of cube_master.js - lines moved verbatim, no logic changed.
+// [MODULE] background particles and the menu coin counter.
 // ═══════════════════════════════════════════════
 // GRIDLOCK — Game Logic // [2.0-s5a]
 // ═══════════════════════════════════════════════
@@ -98,47 +97,24 @@ function spawnMenuCoinFloat(amount, x, y){
 
 
 // Wire click sounds to menu buttons
-document.querySelectorAll('.menu-btn,.pin-btn,.mission-claim-btn,.tester-toggle').forEach(b=>{
+document.querySelectorAll('.menu-btn,.mission-claim-btn').forEach(b=>{
   b.addEventListener('click', ()=> playUISound('click'));
 });
 
-// ── FPS COUNTER ──
-function fpsLoop(ts) {
-  fpsFrames++;
-  if (ts - fpsLast >= 1000) {
-    fpsCurrent = fpsFrames; fpsFrames = 0; fpsLast = ts;
-    if (hudFpsEl) hudFpsEl.textContent = fpsCurrent + ' FPS';
-  }
-  if (tFps && alive) requestAnimationFrame(fpsLoop);
-  else if (hudFpsEl) hudFpsEl.textContent = '';
-}
-function setFps(on) {
-  tFps = on;
-  if (hudFpsEl) hudFpsEl.style.display = on ? 'block' : 'none';
-  if (on && alive) { fpsFrames=0; fpsLast=performance.now(); requestAnimationFrame(fpsLoop); }
-}
 
 
 
 
 
-
-function startGame(hard = false, fromTester = false, custom = false, tutorial = false) {
+function startGame(hard = false, tutorial = false) {
   hardMode = hard;
-  customGame = custom; // [2.0-s3.1] only true via startCustomGame()
   tutorialActive = tutorial; // [2.0-s4h] set on every entry → real games always clear it
-  // [1.10.1] testerActive is persistent — don't override; save snap if active
-  if (testerActive) {
-    // [2.0-w1fix] snapshot moved to enableTesterMode() — re-taking it here overwrote the baseline every game
-    SKINS.forEach(s=>{ if(!owned.includes(s.id)) owned.push(s.id); });
-    // no save() — tester unlocks stay in memory only
-  }
   showScreen('app');
   deathOverlay.classList.remove('show');
   clearTimeout(phaseTimer);
   cube={x:8,y:8};
-  round = 0; // [1.10.1] always 0; use Skip to round in FAB for custom start
-  fabPaused = false; // [1.10.2]
+  round = 0;
+  gamePaused = false; // [1.10.2]
   _cleanupBoss(); // [1.11] reset boss state on new game
   _endGridlockMode(false); gridlockActive=false; gridlockRoundsLeft=0; // [1.12]
   _resetRoundMods(); // [2.0-s3]
@@ -148,7 +124,7 @@ function startGame(hard = false, fromTester = false, custom = false, tutorial = 
   particles=[]; trails=[]; invalidateSkinCache();
   asteroids=[]; clearTimeout(asteroidTimer); asteroidTimer=null; // [2.0-s2]
   blackHoleCooldown=0; blackHoleReadyAt=0; _resetBlackHole(); // [2.0-s2][2.0-s4g]
-  if (_asteroidsEnabled() && !tutorialActive) scheduleAsteroid(); // [2.0-s2][2.0-s3.1][2.0-s4h] no asteroids in tutorial
+  if (_asteroidsEnabled() && !tutorialActive) scheduleAsteroid(); // [2.0-s2][2.0-s4h] no asteroids in tutorial
   sessionCoinsEarned = 0;
   sessionCrystalsEarned = 0; // [2.0-s1]
   // [2.0-ads] per-game ad + payout bookkeeping — a fresh game gets a fresh revive and a clean slate
@@ -169,13 +145,12 @@ function startGame(hard = false, fromTester = false, custom = false, tutorial = 
   const titleEl = document.getElementById('death-title');
   if (titleEl) titleEl.textContent = 'GAME OVER';
   comboCount = 0; bestComboThisSession = 0; // [1.9.2]
-  startTime=Date.now(); _virtAccum=0; _virtBase=startTime; _appliedSpeedMult=tSpeedMult; // [1.10.2-fix]
+  startTime=Date.now(); _virtAccum=0; _virtBase=startTime; // [1.10.2-fix]
   buildBoard(); render();
-  if (tutorialActive) _tutorialStart(); else if (customGame) _customStart(); else startRound(); // [2.0-s3.2][2.0-s4h] tutorial vs sandbox vs normal
+  if (tutorialActive) _tutorialStart(); else startRound(); // [2.0-s4h] tutorial vs normal
   if (!tutorialActive) mTrackGameStart(); // [2.0-s4h] tutorial isn't a tracked game
   if (!tutorialActive) cgGameplayStart(); // [2.0-sdk] tutorial is onboarding, not gameplay
   if (_hudPauseBtn) _hudPauseBtn.style.display = tutorialActive ? 'none' : ''; // [2.0-pause] no dead button mid-tutorial
-  if (testerActive && tFps) { fpsFrames=0; fpsLast=performance.now(); requestAnimationFrame(fpsLoop); }
 }
 
 
@@ -192,11 +167,10 @@ window.addEventListener('pointerup', () => {
 });
 window.addEventListener('pointercancel', () => { _dashPressX = _dashPressY = -1; });
 
-// ── WSZYSTKIE EVENTY MENU ──
+// ── MENU EVENT WIRING ──
 document.getElementById('bar-missions').addEventListener('click',  showMissions);
 document.getElementById('bar-shop').addEventListener('click',      ()=>{ if (currentWorld === 2) { openVoidShop(); } else { showScreen('screen-start'); openShop(true); } }); // [2.0-s5c] W2 → Void Shop
 document.getElementById('bar-stats').addEventListener('click',     showStats);
-document.getElementById('bar-tester').addEventListener('click',    showPin); // [1.10.1] always PIN
 document.getElementById('bar-reset').addEventListener('click', ()=>{
   resetDialog.style.visibility='visible'; resetDialog.style.pointerEvents='auto';
 });
@@ -236,13 +210,6 @@ document.getElementById('stats-tab-w1').addEventListener('click', ()=>{ statsVie
 document.getElementById('stats-tab-w2').addEventListener('click', ()=>{ statsView=2; playUISound('tab'); renderStats(); }); // [2.0-s3]
 document.getElementById('btn-retry').addEventListener('click',      ()=>startGame(hardMode)); // [1.10.1]
 document.getElementById('btn-to-menu').addEventListener('click',    showMenu);
-document.getElementById('pin-back').addEventListener('click',       ()=>showMenu());
-document.getElementById('pin-ok').addEventListener('click',         submitPin);
-document.getElementById('pin-del').addEventListener('click',        ()=>{ pinBuffer=pinBuffer.slice(0,-1); updatePinDisplay(); });
-document.querySelectorAll('.pin-btn[data-v]').forEach(b=>{
-  b.addEventListener('click',()=>{ if(pinBuffer.length<9){ pinBuffer+=b.dataset.v; updatePinDisplay(); } }); // [1.9.2]
-});
-document.getElementById('tester-fab-btn').addEventListener('click', _toggleFab);
 // [2.0-s4h] Tutorial — single corner skip button
 document.getElementById('tut-skip').addEventListener('click', ()=>{ playSound('click'); _tutSkip(); });
 document.getElementById('reset-cancel').addEventListener('click', ()=>{
@@ -260,7 +227,7 @@ voidRevealOk.addEventListener('click', closeVoidReveal);
 document.getElementById('shop-tab-cube').addEventListener('click', ()=>{ shopActiveTab='cube'; renderShop(); });
 document.getElementById('shop-tab-bl').addEventListener('click',   ()=>{ shopActiveTab='bl';   renderShop(); });
 window.addEventListener('resize', ()=>{ if(alive&&appEl.style.visibility!=='hidden'){ invalidateSkinCache(); buildBoard(); render(); } });
-// inicjalizacja
+// bootstrap
 applyWorldTheme(); // [2.0-s1] reflect remembered world preference on load
 // [2.0-sdk] try/finally so loadingStop can't be skipped. Verified in the browser: on a first
 // launch startTutorial() can throw (pre-existing roundRect bug), which aborted the rest of this

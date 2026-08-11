@@ -4,7 +4,19 @@
 // ══════════════════════════════════════════════════
 // CONSTANTS
 // ══════════════════════════════════════════════════
+// [2.0-adgate] The single switch for everything ad-shaped: the two game-over offers, the Void Shop
+// ad box and the random interstitial. OFF because the game ships under Basic Launch, where ads are
+// not served at all — so every ad affordance would be a control that cannot work, which is the
+// worst thing to hand a reviewer. The integration underneath is complete and tested; flip this to
+// true on Full Launch and the whole feature appears, with no other change anywhere.
+const ADS_ENABLED = false;
+
 const N = 16, DASH_RANGE = 5, MAX_LASERS = 12;
+// [2.0-boardfix] Floor for the board's pixel size. buildBoard() derives the size from the viewport
+// and the viewport can measure ~0 during the first synchronous layout of a cold load, which used to
+// produce a NEGATIVE board. 160px is 10px per cell — cramped but drawable, and no real viewport
+// ever reaches down to it (it needs a window under 280px tall).
+const MIN_BOARD_PX = 160;
 const CHARGE_START = 1100, CHARGE_MIN = 500, CHARGE_STEP = 50;
 const FIRE_MS = 700, GAP_MS = 850;
 const BLOCK_INTERVAL = 3, MAX_BLOCKS = 12;
@@ -167,7 +179,7 @@ const CUBEK2_LINES = [ // [2.0-s1]
   "You'll face Solar Flares and Asteroids instead of lasers. Master the Black Hole to teleport across the grid.",
   "Void Crystals are the currency here. Spend them wisely in the Void Shop. Good luck — you'll need it."
 ];
-const SCREENS = ['screen-start','screen-stats','screen-pin','screen-missions','screen-modes','screen-world-choice','screen-cubek2','app']; // [1.10] [1.10.1] removed screen-tester [2.0-s1] world screens [2.0-s4h] removed screen-tutorial
+const SCREENS = ['screen-start','screen-stats','screen-missions','screen-modes','screen-world-choice','screen-cubek2','app']; // [2.0-s1] world screens [2.0-s4h] no screen-tutorial [2.0-notester] no screen-pin
 const MISSION_POOL = [ // [1.9] all names translated
   { id:'lasers_100',   type:'lasers_dodged',   target:100,  name:'Dodge 100 lasers'                 },
   { id:'lasers_250',   type:'lasers_dodged',   target:250,  name:'Dodge 250 lasers'                 },

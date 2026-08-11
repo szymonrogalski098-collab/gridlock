@@ -28,7 +28,7 @@ function scheduleAsteroid() { // self-rescheduling spawner; skips (but survives)
   const next = () => 2000 + Math.random()*1000;
   asteroidTimer = setTimeout(function tick() {
     if (!_asteroidsEnabled() || !alive) { asteroidTimer = null; return; } // [2.0-s3.1]
-    if (!bossRound && !fabPaused) _spawnAsteroid();
+    if (!bossRound && !gamePaused) _spawnAsteroid();
     asteroidTimer = setTimeout(tick, next());
   }, next());
 }
@@ -88,7 +88,7 @@ function drawAsteroids(now) {
     _drawAstRock(gx, gy, a, now);
     const cx = Math.floor(gx), cy = Math.floor(gy);
     if (cx>=0&&cx<N&&cy>=0&&cy<N && cx===cube.x && cy===cube.y
-        && !blackHoleAnimating && !(testerActive && tNoclip) && !customGame && !tutorialActive) { // [2.0-s3.2] immortal in sandbox [2.0-s4h]
+        && !blackHoleAnimating && !tutorialActive) { // [2.0-s4h] immortal during the tutorial
       die('asteroid'); return;
     }
   }
@@ -109,7 +109,6 @@ function updateBlackHoleHud() { // [2.0-s2] cooldown indicator, World 2 only
   // [2.0-deemoji] value-only writes; the singularity icon is static SVG and picks up bh-ready /
   // bh-cooldown colour through stroke:currentColor
   const _bh = (txt, cls) => { hudBlackholeVal.textContent = txt; hudBlackhole.className = cls; };
-  if (testerActive && tInfBlackHole) { _bh('∞', 'bh-ready'); return; } // [2.0-s4d]
   if (w2Boss && bossRound) { // [2.0-s4g] time-based countdown during W2 boss
     const msLeft = blackHoleReadyAt - Date.now();
     if (msLeft <= 0) _bh('Ready', 'bh-ready');
@@ -154,9 +153,9 @@ function _bhFinish() {
   blackHoleAnimating = false; blackHole = null;
   if (!alive) return;
   if (w2Boss && bossRound) { // [2.0-s4g] time-based cooldown during W2 boss
-    blackHoleReadyAt = (customGame || (testerActive && tInfBlackHole)) ? 0 : Date.now() + 10000;
+    blackHoleReadyAt = Date.now() + 10000;
   } else {
-    blackHoleCooldown = (customGame || (testerActive && tInfBlackHole)) ? 0 : 3; // [2.0-s3.3][2.0-s4d]
+    blackHoleCooldown = 3; // [2.0-s3.3]
   }
   if (w2Boss) _w2OnPlayerMoved(); // [2.0-s4e] teleporting onto a hit plate / crater registers like a dash landing
   render();
@@ -210,7 +209,7 @@ function drawBlackHole(now) {
 let _dashPressX = -1, _dashPressY = -1; // [2.0-s4] cell where the dash was first pressed (target locked on press)
 function tryDash(x,y) {
   if (!alive) return;
-  if (fabPaused) return; // [1.10.2] no input while FAB menu is open
+  if (gamePaused) return; // [1.10.2] no input while the game is frozen
   if (blackHoleAnimating) return; // [2.0-s2] input locked during teleport
   if (_w2Pulling) return; // [2.0-s4c] input locked while a gravity/black-hole pull is animating
   if (x===cube.x&&y===cube.y) return;
@@ -238,9 +237,9 @@ function tryDash(x,y) {
   // [2.0-s2] World 2: long-range click = Black Hole teleport (independent of dashesLeft)
   if (_blackHoleEnabled() && d > DASH_RANGE) { // [2.0-s3.1]
     if (w2Boss && bossRound) { // [2.0-s4g] time-based gate during W2 boss
-      if (Date.now() < blackHoleReadyAt && !(testerActive && tInfBlackHole)) { flash('NOT READY'); return; }
+      if (Date.now() < blackHoleReadyAt) { flash('NOT READY'); return; }
     } else {
-      if (blackHoleCooldown > 0 && !(testerActive && tInfBlackHole)) { flash('NOT READY'); return; } // [2.0-s4d]
+      if (blackHoleCooldown > 0) { flash('NOT READY'); return; }
     }
     const dest = `${x},${y}`;
     if (getBossCells().has(dest) || bossShockwaveCells.has(dest) || flareCellHas(x,y)) { flash('Blocked!'); return; }
@@ -248,7 +247,7 @@ function tryDash(x,y) {
     return;
   }
 
-  if (dashesLeft<=0 && !(testerActive && tDashInf) && !bossRound && !customGame && !tutorialActive){flash('No dash available!');return;} // [1.9][1.11][2.0-s3.3][2.0-s4h]
+  if (dashesLeft<=0 && !bossRound && !tutorialActive){flash('No dash available!');return;} // [1.9][1.11][2.0-s4h]
   const prevX=cube.x, prevY=cube.y;
 
   if (d<=DASH_RANGE) { cube.x=x; cube.y=y; }
@@ -272,7 +271,7 @@ function tryDash(x,y) {
   spawnDashParticles(prevX, prevY); // [1.9.3]
   spawnTrail(prevX, prevY, cube.x, cube.y);
   playSound('dash');
-  if (!bossRound && !customGame && !tutorialActive) dashesLeft--; // [1.11][2.0-s3.3][2.0-s4h] unlimited dashes during boss / sandbox / tutorial
+  if (!bossRound && !tutorialActive) dashesLeft--; // [1.11][2.0-s4h] unlimited dashes during a boss fight and the tutorial
 
   // near miss — check if laser fire is on adjacent cell
   for (const L of lasers) {

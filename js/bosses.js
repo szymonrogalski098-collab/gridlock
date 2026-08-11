@@ -87,7 +87,7 @@ function startBossRound(tier) { // [1.11]
     // countdown
     bossTimer = setInterval(() => {
       if (!alive || !bossRound) { clearInterval(bossTimer); return; }
-      if (fabPaused) return;
+      if (gamePaused) return;
       bossTimeLeft--;
       if (hudTimerEl) {
         hudTimerVal.textContent = `${bossTimeLeft}s`; // [2.0-deemoji]
@@ -108,7 +108,7 @@ function _blocksPaused() { return Date.now() < _blockAttackPauseUntil; } // [2.0
 let _bossPressureCount = 0; // [2.0-s4e] burst counter — 5 hits then a 6s pause
 function _bossPressureTick() { // [2.0-s4e] pressure burst — one block on the player's cell, 5×(1/s) then 6s pause (W1 + W2)
   if (!alive || !bossRound) return; // loop stops (no reschedule)
-  if (fabPaused) { bossPressureTimer = setTimeout(_bossPressureTick, 300); return; } // hold during pause
+  if (gamePaused) { bossPressureTimer = setTimeout(_bossPressureTick, 300); return; } // hold during pause
   blocks = blocks.filter(b => !b.bossPressure); // clear previous pressure block
   const b = { x: cube.x, y: cube.y, state: 'charge', bossPressure: true };
   blocks.push(b);
@@ -183,7 +183,7 @@ function _maybeMoveBoss() { // [2.0-s4] occasionally drift the boss 1–2 cells 
 
 function _bossTick() { // [1.11][2.0-s4] — jittered throw loop: drift + two simultaneous attacks
   if (!alive || !bossRound) return; // loop stops (no reschedule)
-  if (fabPaused) { _scheduleBossThrow(); return; } // hold cadence while paused
+  if (gamePaused) { _scheduleBossThrow(); return; } // hold cadence while paused
   if (_blocksPaused()) { _scheduleBossThrow(); return; } // [2.0-s4e] no throws during the block-attack pause
   blocks = blocks.filter(b => !b.bossThrow); // clear previous throw warnings
   _maybeMoveBoss();
@@ -214,7 +214,7 @@ function _startBlockRain() { // [1.11]
       }, 500));
       return;
     }
-    if (fabPaused) return;
+    if (gamePaused) return;
     if (_blocksPaused()) return; // [2.0-s4e] no rain during the block-attack pause
     const bCells = getBossCells();
     const rainPositions = [], rainUsed = new Set();
@@ -256,7 +256,7 @@ function _triggerBossShockwave() { // [1.11]
     for (let x = 0; x < N; x++)
       if (Math.abs(x - scx) + Math.abs(y - scy) <= 3)
         bossShockwaveCells.add(`${x},${y}`);
-  if (!(testerActive && tNoclip) && !tutorialActive && bossShockwaveCells.has(`${cube.x},${cube.y}`)) // [2.0-s4h]
+  if (!tutorialActive && bossShockwaveCells.has(`${cube.x},${cube.y}`)) // [2.0-s4h]
     return die('block');
   render(); startAnim();
   bossAttackTimers.push(setTimeout(() => {
@@ -277,11 +277,9 @@ function bossVictory() { // [1.11]
   // return early into startBossRound() instead), so mission/combo progress silently vanished
   // for every boss win. No addStatLasers()/mTrackLaserDodged() here on purpose — boss combat
   // doesn't have "lasers dodged" in the dash sense, and forcing it would inflate that stat.
-  if (!testerActive) {
-    mTrackRoundSurvived(false); // boss round counts toward "rounds_played" for missions
-    mTrackCoins(cfg.reward);
-    mTrackTime(Math.round(CHARGE_START/1000) + 2); // approximate duration of the boss round
-  }
+  mTrackRoundSurvived(false); // boss round counts toward "rounds_played" for missions
+  mTrackCoins(cfg.reward);
+  mTrackTime(Math.round(CHARGE_START/1000) + 2); // approximate duration of the boss round
   comboCount += comboStep;
   if (comboCount > bestComboThisSession) bestComboThisSession = comboCount;
   recordBestCombo(comboCount); // [2.0-s3] per world
@@ -337,11 +335,9 @@ function w2BossVictory() { // [2.0-s4b]
   addCurrencyTotal(cfg.reward);
   // [2.0-bossfix] same gap as bossVictory() (W1) — see the comment there. Applies to every
   // W2 boss (PULSAR/NEUTRON/SINGULARITY), not just the W1 VOID KING the bug was reported for.
-  if (!testerActive) {
-    mTrackRoundSurvived(false);
-    mTrackCoins(cfg.reward);
-    mTrackTime(Math.round(CHARGE_START/1000) + 2);
-  }
+  mTrackRoundSurvived(false);
+  mTrackCoins(cfg.reward);
+  mTrackTime(Math.round(CHARGE_START/1000) + 2);
   comboCount += comboStep;
   if (comboCount > bestComboThisSession) bestComboThisSession = comboCount;
   recordBestCombo(comboCount);
@@ -366,7 +362,7 @@ function _w2SpawnHitPlate() { // [2.0-s4b] golden plate on a random safe cell (n
 
 function _w2OnPlayerMoved() { // [2.0-s4b] react to the player's new cell
   if (!w2Boss || !bossActive) return;
-  if (destroyedCells.has(`${cube.x},${cube.y}`) && !(testerActive && tNoclip) && !tutorialActive) { die('asteroid'); return; } // [2.0-s4h]
+  if (destroyedCells.has(`${cube.x},${cube.y}`) && !tutorialActive) { die('asteroid'); return; } // [2.0-s4h]
   if (hitPlate && cube.x === hitPlate.x && cube.y === hitPlate.y && Date.now() >= bossShieldUntil && !turret) {
     _w2SpawnTurret();
   }
@@ -389,7 +385,7 @@ function _w2SpawnTurret() { // [2.0-s4b] emitter on a free adjacent cell; fixed 
   bossAttackTimers.push(setTimeout(() => {
     if (!alive || !bossRound || !turret) return;
     // risky: standing on the charging plate or emitter when it fires = death
-    if (!(testerActive && tNoclip) && !tutorialActive && // [2.0-s4h]
+    if (!tutorialActive && // [2.0-s4h]
         ((cube.x === turret.px && cube.y === turret.py) || (cube.x === turret.ex && cube.y === turret.ey))) {
       turret = null; die('flare'); return;
     }
@@ -431,7 +427,7 @@ function _w2ScheduleThrow() { // [2.0-s4b] two random ≤5-cell block throws, sl
   const base = 1600 / w2SpeedMult;
   bossAttackTimers.push(setTimeout(() => {
     if (!alive || !bossRound || !w2Boss) return;
-    if (!fabPaused && !_blocksPaused()) { blocks = blocks.filter(b => !b.bossThrow); _fireBossAttack(); _fireBossAttack(); render(); } // [2.0-s4e] no throws during the block-attack pause
+    if (!gamePaused && !_blocksPaused()) { blocks = blocks.filter(b => !b.bossThrow); _fireBossAttack(); _fireBossAttack(); render(); } // [2.0-s4e] no throws during the block-attack pause
     _w2ScheduleThrow();
   }, base * (0.8 + Math.random()*0.4)));
 }
@@ -545,7 +541,7 @@ function _w2FallingStar() { // [2.0-s4b][2.0-s4d] gated; longer streak → irreg
     spawnBlockImpact(ix, iy);
     w2StarShock = { x: ix, y: iy, born: Date.now() }; // [2.0-s4d] expanding shockwave + flash
     render(); startAnim();
-    if (destroyedCells.has(`${cube.x},${cube.y}`) && !(testerActive && tNoclip) && !tutorialActive) die('asteroid'); // [2.0-s4h]
+    if (destroyedCells.has(`${cube.x},${cube.y}`) && !tutorialActive) die('asteroid'); // [2.0-s4h]
   }, 1100));
 }
 
@@ -683,7 +679,7 @@ function _drawW2Spin(now) { // [2.0-s4b][2.0-s4d] charge telegraph → rotating 
     }
   }
   ctx.restore();
-  if (!charging && !(testerActive && tNoclip) && !tutorialActive && w2SpinCells.has(`${cube.x},${cube.y}`)) die('flare'); // [2.0-s4h]
+  if (!charging && !tutorialActive && w2SpinCells.has(`${cube.x},${cube.y}`)) die('flare'); // [2.0-s4h]
   startAnim();
 }
 

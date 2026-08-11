@@ -157,11 +157,34 @@ function drawLaserPreview(cv, colorId2) {
 // ══════════════════════════════════════════════════
 // BOARD
 // ══════════════════════════════════════════════════
+// [2.0-boardfix] One-shot latch so the re-measure below can never become an rAF loop.
+let _boardRemeasureQueued = false;
+
 function buildBoard() {
   const vw = document.documentElement.clientWidth;
   const vh = window.visualViewport ? window.visualViewport.height : window.innerHeight;
-  const size = Math.min(vw - 16, vh - 120, 440);
+  // [2.0-boardfix] `vh - 120` goes negative on any viewport under ~104px tall, and the viewport
+  // measures ~0 during the first synchronous layout of a cold load. That made the whole chain
+  // negative: size -120 -> cellSize -7.5 -> getSkinCanvas' `Math.ceil(cellSize) || 24` returned -7
+  // (negative is truthy, so the intended 24px fallback never engaged) -> drawSkin drew the default
+  // skin's rings at radius -7 x .48 x .2, and canvas threw
+  //   "Failed to execute 'roundRect': Radius value -0.672 is negative"
+  // on literally every first launch. `canvas.width = -120` was silently failing to 300px too.
+  const raw  = Math.min(vw - 16, vh - 120, 440);
+  const size = Math.max(MIN_BOARD_PX, raw);
   cellSize = size / N;
+  // A clamped board is a guess. If the viewport was simply not measurable yet, re-measure once it
+  // is — otherwise a one-frame blip at boot would leave the player on a 160px board all game. The
+  // inner check is what keeps a genuinely tiny window from rebuilding forever.
+  if (raw < MIN_BOARD_PX && !_boardRemeasureQueued) {
+    _boardRemeasureQueued = true;
+    requestAnimationFrame(() => {
+      _boardRemeasureQueued = false;
+      const vh2 = window.visualViewport ? window.visualViewport.height : window.innerHeight;
+      const raw2 = Math.min(document.documentElement.clientWidth - 16, vh2 - 120, 440);
+      if (raw2 >= MIN_BOARD_PX) { invalidateSkinCache(); buildBoard(); render(); }
+    });
+  }
   boardEl.style.width = boardEl.style.height = size + 'px';
   boardEl.style.gridTemplate = `repeat(${N},1fr)/repeat(${N},1fr)`;
   canvas.width = canvas.height = size;
@@ -203,7 +226,11 @@ let skinCacheId = null;     // skin id in cache
 let skinCacheT  = -1;       // t in cache (for animated skins)
 
 function getSkinCanvas(t) {
-  const sz = Math.ceil(cellSize) || 24;
+  // [2.0-boardfix] Was `Math.ceil(cellSize) || 24`, which only caught cellSize 0 — a negative
+  // cellSize is truthy and sailed straight through into drawSkin. Same 24px fallback, but now it
+  // triggers on any size that isn't drawable. buildBoard() no longer produces one; this is the
+  // second line of defence, since every skin's geometry trusts this number.
+  const sz = cellSize > 0 ? Math.ceil(cellSize) : 24;
   const animated = ANIMATED_SKINS.has(skinId);
   const needRegen = !skinCache
     || skinCacheId !== skinId
@@ -310,19 +337,17 @@ function render() {
     hudCoins.classList.remove('hud-bump'); void hudCoins.offsetWidth;
     hudCoins.classList.add('hud-bump');
   }
-  hudInfo.textContent  = customGame // [2.0-s3.2][2.0-deemoji] multi-state line stays plain text
-    ? 'CUSTOM'
-    : (bossRound && bossActive && w2Boss) // [2.0-s4b] W2 active-combat boss: hits + shield
+  hudInfo.textContent  = (bossRound && bossActive && w2Boss) // [2.0-s4b][2.0-deemoji] multi-state line stays plain text
     ? `${w2Boss.name} · ${bossHitsLeft} hit${bossHitsLeft===1?'':'s'} left${Date.now()<bossShieldUntil?' · SHIELD':''} · +${w2Boss.reward} ✦`
     : (bossRound && bossActive) // [1.11]
     ? `${BOSS_CONFIG[bossTier].name} · +${BOSS_CONFIG[bossTier].reward} 🪙`
-    : `${testerActive ? 'TEST · ' : ''}Round ${round} · ${aliveTime()}s`; // [1.9]
+    : `Round ${round} · ${aliveTime()}s`; // [1.9]
   if (round !== _prevHudRound) { // [1.9.3]
     _prevHudRound = round;
     hudInfo.classList.remove('hud-bump'); void hudInfo.offsetWidth;
     hudInfo.classList.add('hud-bump');
   }
-  hudDashVal.textContent = `${testerActive && tDashInf ? '∞' : dashesLeft}`; // [2.0-deemoji]
+  hudDashVal.textContent = `${dashesLeft}`; // [2.0-deemoji]
   updateBlackHoleHud(); // [2.0-s2]
   // [1.9.2] Combo indicator — only visible when combo >= 5
   if (comboCount >= 5) {
@@ -338,11 +363,11 @@ function render() {
 
 function dist(x1,y1,x2,y2){return Math.abs(x1-x2)+Math.abs(y1-y2);}
 function _virtMs() { // [1.10.2-fix] virtual elapsed ms using committed round-boundary multiplier
-  return _virtAccum + (Date.now() - _virtBase) * (testerActive ? _appliedSpeedMult : 1);
+  return _virtAccum + (Date.now() - _virtBase);
 }
 function _freezeVirtTime() { // [1.10.2-fix] snapshot virtual time (called at round boundaries and pause)
   if (!alive) return;
-  _virtAccum += (Date.now() - _virtBase) * (testerActive ? _appliedSpeedMult : 1);
+  _virtAccum += (Date.now() - _virtBase);
   _virtBase = Date.now();
 }
 function aliveTime(){ // [1.10.2-fix]
@@ -367,8 +392,7 @@ function showComboFlash(combo, bonus) { // [1.9.2]
   el.textContent = `Combo x${combo}! +${bonus} bonus ${curIcon()}`; // [2.0-s1][2.0-deemoji]
   el.style.display = 'block'; el.style.opacity = '1';
   clearTimeout(el._t1); clearTimeout(el._t2);
-  const _cf1 = testerActive ? (1200 / Math.max(0.01, tSpeedMult)) : 1200; // [1.10.2]
-  const _cf2 = testerActive ? (1600 / Math.max(0.01, tSpeedMult)) : 1600; // [1.10.2]
+  const _cf1 = 1200, _cf2 = 1600;
   el._t1FiresAt = Date.now() + _cf1; // [1.10.2]
   el._t2FiresAt = Date.now() + _cf2; // [1.10.2]
   el._t1 = setTimeout(() => { el.style.opacity = '0'; el._t1FiresAt = 0; }, _cf1);
@@ -377,13 +401,11 @@ function showComboFlash(combo, bonus) { // [1.9.2]
 
 // Timer every 100ms — updates time in HUD
 setInterval(()=>{
-  if (fabPaused) return; // [1.10.2] halt all HUD logic while paused
+  if (gamePaused) return; // [1.10.2] halt all HUD logic while paused
   if (alive && appEl.style.visibility !== 'hidden') {
-    hudInfo.textContent = customGame // [2.0-s3.2][2.0-deemoji]
-      ? 'CUSTOM'
-      : (bossRound && bossActive) // [1.11]
+    hudInfo.textContent = (bossRound && bossActive) // [1.11][2.0-deemoji]
       ? `${BOSS_CONFIG[bossTier].name} · +${BOSS_CONFIG[bossTier].reward} 🪙`
-      : `${testerActive?'TEST · ':''}Round ${round} · ${aliveTime()}s`; // [1.9]
+      : `Round ${round} · ${aliveTime()}s`; // [1.9]
     hudCoins.textContent = gridlockActive ? `${curIcon()} ${curWallet()} ×2` : `${curIcon()} ${curWallet()}`; // [1.12][2.0-s1]
     updateBlackHoleHud(); // [2.0-s2]
     if (gameMode === 'timeattack') { // [1.10]
@@ -514,9 +536,9 @@ function animLoop() {
   }
 
   // [1.10.2] Pause overlay — drawn on top of everything
-  // [2.0-pause] ...except during a player pause, which puts its own DOM overlay up. Player pause
-  // routes through fabPauseGame(), so without this both would render at once.
-  if (fabPaused && !_pausedByPlayer) {
+  // [2.0-pause] ...except during a player pause, which puts its own DOM overlay up. Both routes
+  // set gamePaused, so without this check an ad pause and a player pause would render at once.
+  if (gamePaused && !_pausedByPlayer) {
     ctx.fillStyle = 'rgba(0,0,0,0.45)';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
     ctx.fillStyle = '#0cf';
@@ -532,7 +554,7 @@ function animLoop() {
   const shouldContinue = particles.length > 0 || trails.length > 0
     || (alive && ANIMATED_SKINS.has(skinId))
     || (lasers.length > 0 && !bossActive) // [1.11]
-    || fabPaused          // [1.10.2] keep running to display pause overlay
+    || gamePaused         // [1.10.2] keep running to display pause overlay
     || bossActive         // [1.11] keep running for boss animations
     || bossRound          // [1.11] keep running during boss intro (before bossActive)
     || gridlockActive     // [1.12] keep running for scanlines animation

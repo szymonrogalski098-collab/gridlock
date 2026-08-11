@@ -1,56 +1,10 @@
-// [MODULE] The core game loop for BOTH worlds - startRound, die, death checks, round modifiers, GRIDLOCK, sandbox cycle.
+// [MODULE] The core game loop for BOTH worlds - startRound, die, death checks, round modifiers, GRIDLOCK.
 // [MODULE] Split out of cube_master.js - lines moved verbatim, no logic changed.
 // [MODULE] Load order matters: see the script tags at the bottom of index.html.
 // ══════════════════════════════════════════════════
-// [2.0-s3.2] CUSTOM GAME SANDBOX — immortal, no rounds/coins/stats, live hazards
-// ══════════════════════════════════════════════════
-function _customStart() {
-  clearTimeout(phaseTimer);
-  flash('SANDBOX');
-  if (_asteroidsEnabled() && !asteroidTimer) scheduleAsteroid();
-  _customCycle();
-}
-
-function _customCycle() { // continuous charge→fire→clear loop; never awards or kills
-  if (!alive || !customGame) return;
-  clearTimeout(phaseTimer);
-  lasers = []; blocks = [];
-  if (customCfg.lasers) _genLasers(6); // fixed sandbox count
-  if (customCfg.blocks) generateBlocks(4); // fixed sandbox count
-  const sm = ((testerActive && tSlow) ? 4 : 1) / (testerActive ? Math.max(0.01, tSpeedMult) : 1);
-  const charge = CHARGE_START * sm, firems = FIRE_MS * sm, gapms = GAP_MS * sm;
-  if (currentWorld === 2) { _flareChargeStart = Date.now(); _flareChargeDur = charge; }
-  render();
-  if (customCfg.lasers) { currentWorld === 2 ? playSolarFlareCharge() : playSound('laser_charge'); } // [2.0-s3.3] hazard sound
-  phaseTimer = _schedulePhase(() => {
-    if (!alive || !customGame) return;
-    for (const L of lasers) L.state = 'fire';
-    if (currentWorld === 2) { _flareFireStart = Date.now(); _flareFireDur = firems; }
-    for (const b of blocks) { b.state = 'land'; spawnBlockImpact(b.x, b.y); }
-    render();
-    if (customCfg.lasers) { currentWorld === 2 ? playSolarFlareRelease() : playSound('laser_fire'); } // [2.0-s3.3] hazard sound (no survival sounds)
-    phaseTimer = _schedulePhase(() => {
-      if (!alive || !customGame) return;
-      lasers = []; blocks = []; render();
-      phaseTimer = _schedulePhase(_customCycle, gapms);
-    }, firems);
-  }, charge);
-}
-
-function _customApplyToggles() { // live hazard apply when a toggle is flipped mid-sandbox
-  if (!customGame || !alive) return;
-  if (!customCfg.lasers) lasers = [];
-  if (!customCfg.blocks) blocks = [];
-  if (customCfg.asteroids) { if (!asteroidTimer) scheduleAsteroid(); }
-  else { asteroids = []; clearTimeout(asteroidTimer); asteroidTimer = null; }
-  updateBlackHoleHud();
-  render();
-}
-
-// ══════════════════════════════════════════════════
 // ROUNDS
 // ══════════════════════════════════════════════════
-function _schedulePhase(fn, ms) { // [1.10.2] tracks pending phase for FAB pause/resume
+function _schedulePhase(fn, ms) { // [1.10.2] tracks the pending phase so pause/resume can restore it
   _phaseFn = fn;
   _phaseFiresAt = Date.now() + ms;
   return setTimeout(fn, ms);
@@ -175,17 +129,6 @@ function showModBanner(mod, duration) { // [2.0-s3] brief center banner naming t
   _modBannerTimer = setTimeout(() => el.classList.remove('show'), 1200);
 }
 
-function triggerRoundMod(id) { // [2.0-s3.1] tester: manually activate a modifier (respects the same blocks)
-  if (!alive) return;
-  if (bossRound)         { showFabFeedback('⛔ Blocked during boss');      return; }
-  if (gridlockActive)    { showFabFeedback('⛔ Blocked during GRIDLOCK');  return; }
-  if (gameMode !== null) { showFabFeedback('⛔ Blocked in this mode');      return; }
-  const mod = ROUND_MODS.find(m => m.id === id);
-  if (!mod) return;
-  if (activeMod) { activeMod.onEnd(); activeMod = null; } // replace any active modifier
-  _activateRoundMod(mod);
-}
-
 // ══════════════════════════════════════════════════
 // GRIDLOCK MODE // [1.12]
 // ══════════════════════════════════════════════════
@@ -222,12 +165,11 @@ function activateGridlockMode() { // [1.12]
     if (wrap) { wrap.classList.add('gridlock-glitch-fx'); setTimeout(() => wrap.classList.remove('gridlock-glitch-fx'), 130); }
   }, 500);
   if (hudGridlock) { hudGridlock.style.display = ''; hudGridlockVal.textContent = `GRIDLOCK x${gridlockRoundsLeft}`; } // [2.0-deemoji]
-  if (testerActive) renderFabMenu();
 }
 function startRound() {
   if (!alive) return;
   if (bossActive) return; // [1.11] stale timer guard — never spawn lasers during active boss
-  _freezeVirtTime(); _appliedSpeedMult = tSpeedMult; // [1.10.2-fix] commit multiplier at round boundary
+  _freezeVirtTime();
   clearTimeout(phaseTimer); round++; dashesLeft=2;
   roundLasersDodgedByDash = 0; _roundDodgedKeys.clear(); // [2.0-w1fix]
   _tickRoundMod(); // [2.0-s3.1] tick modifier duration + reset/re-apply per-round factors
@@ -260,7 +202,7 @@ function startRound() {
   if (_lasersEnabled()) _genLasers(Math.min(round+1+(gameMode==='timeattack'?2:0),MAX_LASERS)); // [1.10][2.0-s3.2]
 
   if (_blocksEnabled()) generateBlocks(); else blocks = []; // [2.0-s3.1] no blocks in W2 (or per Custom Game)
-  const speedMult = ((testerActive && tSlow) ? 4 : (hardMode ? 0.625 : gameMode==='timeattack' ? 0.8 : 1)) / (testerActive ? Math.max(0.01, tSpeedMult) : 1) / roundSpeedMult; // [1.10][2.0-s3] roundSpeedMult>1 = faster obstacles
+  const speedMult = (hardMode ? 0.625 : gameMode==='timeattack' ? 0.8 : 1) / roundSpeedMult; // [1.10][2.0-s3] roundSpeedMult>1 = faster obstacles
   const charge = CHARGE_START * speedMult;
   const firems = FIRE_MS * speedMult;
   const gapms  = GAP_MS  * speedMult;
@@ -271,7 +213,7 @@ function startRound() {
 
   phaseTimer=_schedulePhase(()=>{ // [1.10.2]
     if (bossActive) return; // [1.11] stale timer guard — never fire lasers during boss
-    if (!tFreeze) for (const L of lasers) L.state='fire';
+    for (const L of lasers) L.state='fire';
     if (currentWorld === 2) { _flareFireStart = Date.now(); _flareFireDur = firems; } // [2.0-s2] solar flare release anim
     for (const b of blocks) { b.state='land'; spawnBlockImpact(b.x,b.y); }
     render(); flash('FIRE!'); // [1.9]
@@ -279,17 +221,15 @@ function startRound() {
     checkDeathByLaser(); checkDeathByBlock();
     phaseTimer=_schedulePhase(()=>{ // [1.10.2]
       if (!alive || bossActive) return; // [1.11] stale timer guard; was: if (!alive) return
-      const _baseEarned = testerActive ? 999 : (hardMode ? 3 : 1);
+      const _baseEarned = hardMode ? 3 : 1;
       const earned = Math.round(_baseEarned * (gridlockActive ? 2 : 1) * roundCoinMult); // [1.12][2.0-s3] gridlock ×2 + round modifier mult
-      if (currentWorld === 2) { crystals += earned; if (!testerActive) sessionCrystalsEarned += earned; } // [2.0-s1]
-      else { coins += earned; if (!testerActive) sessionCoinsEarned += earned; }
+      if (currentWorld === 2) { crystals += earned; sessionCrystalsEarned += earned; } // [2.0-s1]
+      else { coins += earned; sessionCoinsEarned += earned; }
       save(); lasers=[]; blocks=[];
-      if (!testerActive) {
-        mTrackRoundSurvived(false);
-        mTrackCoins(earned);
-        mTrackTime(Math.round(CHARGE_START/1000) + 2); // ~duration of one round in seconds
-        mTrackLaserDodged();
-      }
+      mTrackRoundSurvived(false);
+      mTrackCoins(earned);
+      mTrackTime(Math.round(CHARGE_START/1000) + 2); // ~duration of one round in seconds
+      mTrackLaserDodged();
       // [1.9.2] Extended stats — [2.0-s3] routed per world
       addStatLasers(roundLasersDodgedByDash); // [2.0-w1fix] beams actually dashed over, not every beam that spawned
       addCurrencyTotal(earned); // W1 → cm_stat_coins_total, W2 → cm_world2_stat_crystals_total
@@ -334,7 +274,7 @@ function flareCellHas(x, y) {
 }
 function checkDeathByLaser() {
   if (bossActive) return; // [1.11] stale timer guard
-  if ((testerActive && tNoclip) || tutorialActive) return; // [2.0-s4h]
+  if (tutorialActive) return; // [2.0-s4h]
   if (blackHoleAnimating) return; // [2.0-s2] invincible mid-teleport
   for (const L of lasers) {
     if (L.state!=='fire') continue;
@@ -344,18 +284,9 @@ function checkDeathByLaser() {
   }
 }
 function checkDeathByBlock() {
-  if ((testerActive && tNoclip) || tutorialActive) return; // [2.0-s4h]
+  if (tutorialActive) return; // [2.0-s4h]
   for (const b of blocks)
     if (b.state==='land'&&b.x===cube.x&&b.y===cube.y) return die('block'); // [1.9]
-}
-
-function _resetTesterSettings() { // [1.10.2]
-  tNoclip = false; tSlow = false; tFreeze = false; tDashInf = false; tInfBlackHole = false; // [2.0-s4d]
-  setFps(false); tSpeedMult = 1.0; _appliedSpeedMult = 1.0; // [1.10.2-fix]
-  _fabOpen = false;
-  document.getElementById('tester-fab-menu')?.classList.add('fab-hidden');
-  fabPaused = false;
-  if (testerActive) renderFabMenu();
 }
 
 // [2.0-w1fix] New record ⇒ +200% of what the run earned, so the player walks away with 3× the payout.
@@ -406,12 +337,12 @@ function _timeAttackOver() { // [1.10]
   if (!alive) return;
   alive = false; lastTime = (_virtMs() / 1000).toFixed(1); // [1.10.2-fix]
   clearTimeout(phaseTimer);
-  _resetTesterSettings(); // [1.10.2]
+  gamePaused = false; // [2.0-notester] a death always thaws the game
   if (hudTimerEl) { hudTimerVal.textContent = '0s'; hudTimerEl.classList.add('urgent'); } // [2.0-deemoji]
   const _newRecord = round > bestTimeAttack;
   if (_newRecord) { bestTimeAttack = round; localStorage.setItem('cm_best_timeattack', bestTimeAttack); }
   if (_newRecord) playRecord();
-  const _recBonus = (_newRecord && !testerActive) ? _awardRecordBonus() : 0; // [2.0-w1fix]
+  const _recBonus = _newRecord ? _awardRecordBonus() : 0; // [2.0-w1fix]
   _lastRecBonus = _recBonusPaidThisGame; // [2.0-ads] no revive in Time Attack, so this equals _recBonus
   if (currentWorld === 2) w2Games++; else gamesPlayed++; // [2.0-s3] per world
   save();
@@ -433,7 +364,6 @@ function _timeAttackOver() { // [1.10]
 }
 
 function die(reason) {
-  if (customGame) return; // [2.0-s3.2] sandbox: player is immortal
   if (tutorialActive) return; // [2.0-s4h] tutorial: player is immortal (single robust funnel)
   // [2.0-ads] One death, one die(). Already reachable twice today: startRound()'s fire phase runs
   // `checkDeathByLaser(); checkDeathByBlock();` as two statements, so a laser death is followed by a
@@ -447,7 +377,7 @@ function die(reason) {
   alive=false; lastTime=(_virtMs()/1000).toFixed(1); // [1.10.2-fix]
   cgGameplayStop(); // [2.0-sdk] below the sandbox/tutorial early-returns, so only a real death
   clearTimeout(phaseTimer);
-  _resetTesterSettings(); // [1.10.2]
+  gamePaused = false; // [2.0-notester] a death always thaws the game
   playSound('die');
   spawnDeath(cube.x, cube.y);
   cubeDrawPending = null; // hide cube from canvas
@@ -469,41 +399,39 @@ function die(reason) {
   }
 
   const _lastT = parseFloat(lastTime);
-  // [1.9.2] Combo — capture session best, reset unless tester (session state, always)
-  if (!testerActive && comboCount > bestComboThisSession) bestComboThisSession = comboCount;
-  if (!testerActive) comboCount = 0;
-  // [2.0-s3] records routed per world — [2.0-s3.1] skipped entirely for the Custom Game sandbox
+  // [1.9.2] Combo — capture session best, then reset
+  if (comboCount > bestComboThisSession) bestComboThisSession = comboCount;
+  comboCount = 0;
+  // [2.0-s3] records routed per world
   let _newRecord = false;
   let newUnlock = null;
-  if (!customGame) {
-    if (currentWorld === 2) { if (_lastT > w2BestTime) w2BestTime = _lastT; }
-    else                    { if (_lastT > bestTime)   bestTime   = _lastT; }
-    const _curBestRound = currentWorld === 2 ? w2BestRound : bestRound;
-    _newRecord = round > _curBestRound; // [1.9.2] capture before update
-    if (currentWorld === 2) { if (round > w2BestRound) w2BestRound = round; }
-    else                    { if (round > bestRound)   bestRound   = round; }
-    if (_newRecord) playRecord(); // [1.9.2]
-    recordBestCombo(bestComboThisSession); // [2.0-s3] per world
-    // [2.0-ads] After a revive this is the game's SECOND die(), and _lastT is time since the game
-    // started, not since the revive — so bank the delta, and count the game itself only once.
-    addTimePlayed(Math.max(0, Math.round(_lastT) - _timeBankedThisGame)); // [2.0-s3]
-    _timeBankedThisGame = Math.round(_lastT);
-    if (!reviveUsedThisGame) { if (currentWorld === 2) w2Games++; else gamesPlayed++; } // [2.0-s3][2.0-ads]
-    // unlock prestige skins for round records
-    for (const s of SKINS.filter(s=>s.unlock)) {
-      if (round >= s.unlock && !owned.includes(s.id)) { owned.push(s.id); newUnlock = s; }
-    }
-    // [2.0-w1fix] same for prestige board skins (Prestige Gold) — previously unobtainable
-    for (const b of BOARD_SKIN_LIST.filter(b=>b.unlock)) {
-      if (round >= b.unlock && !boardsOwned.includes(b.id)) {
-        boardsOwned.push(b.id);
-        localStorage.setItem('cm_boards_owned', JSON.stringify(boardsOwned));
-        newUnlock = b;
-      }
+  if (currentWorld === 2) { if (_lastT > w2BestTime) w2BestTime = _lastT; }
+  else                    { if (_lastT > bestTime)   bestTime   = _lastT; }
+  const _curBestRound = currentWorld === 2 ? w2BestRound : bestRound;
+  _newRecord = round > _curBestRound; // [1.9.2] capture before update
+  if (currentWorld === 2) { if (round > w2BestRound) w2BestRound = round; }
+  else                    { if (round > bestRound)   bestRound   = round; }
+  if (_newRecord) playRecord(); // [1.9.2]
+  recordBestCombo(bestComboThisSession); // [2.0-s3] per world
+  // [2.0-ads] After a revive this is the game's SECOND die(), and _lastT is time since the game
+  // started, not since the revive — so bank the delta, and count the game itself only once.
+  addTimePlayed(Math.max(0, Math.round(_lastT) - _timeBankedThisGame)); // [2.0-s3]
+  _timeBankedThisGame = Math.round(_lastT);
+  if (!reviveUsedThisGame) { if (currentWorld === 2) w2Games++; else gamesPlayed++; } // [2.0-s3][2.0-ads]
+  // unlock prestige skins for round records
+  for (const s of SKINS.filter(s=>s.unlock)) {
+    if (round >= s.unlock && !owned.includes(s.id)) { owned.push(s.id); newUnlock = s; }
+  }
+  // [2.0-w1fix] same for prestige board skins (Prestige Gold) — previously unobtainable
+  for (const b of BOARD_SKIN_LIST.filter(b=>b.unlock)) {
+    if (round >= b.unlock && !boardsOwned.includes(b.id)) {
+      boardsOwned.push(b.id);
+      localStorage.setItem('cm_boards_owned', JSON.stringify(boardsOwned));
+      newUnlock = b;
     }
   }
   // [2.0-w1fix] +200% payout on any record this run beat — per-world round best, or the mode's own best
-  if (!testerActive && (_newRecord || _modeRecord)) _awardRecordBonus();
+  if (_newRecord || _modeRecord) _awardRecordBonus();
   // [2.0-ads] The screen itemises the whole game, not just this death: after a revive the earlier
   // bonus is still sitting in sessionCoinsEarned, so the row has to show the game total or the
   // column stops adding up. js/ads-rewards.js re-renders from the same value.

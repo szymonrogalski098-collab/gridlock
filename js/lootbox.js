@@ -142,7 +142,7 @@ function renderVoidOpener() {
 
   // [2.0-ads] Ad box row — only rendered where ads exist at all, so off CrazyGames the shop looks
   // exactly as it did before.
-  if (_cgReady && _cgSdk && !testerActive) {
+  if (_adsAvailable()) {
     const adAvail = canOpenAdBox();
     const adRow = document.createElement('div'); adRow.className = 'void-open-row';
     const aInfo = document.createElement('div'); aInfo.className = 'void-open-info';

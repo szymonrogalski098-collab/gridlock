@@ -2,7 +2,7 @@
 // [MODULE] Split out of cube_master.js - lines moved verbatim, no logic changed.
 // [MODULE] Load order matters: see the script tags at the bottom of index.html.
 // ══════════════════════════════════════════════════
-// SYSTEM SKINÓW — canvas drawing functions
+// SKIN SYSTEM — canvas drawing functions
 // ══════════════════════════════════════════════════
 function drawSkin(ctx2, id, x, y, size, t) {
   const s = size, cx = x+s/2, cy = y+s/2, r = s/2;
