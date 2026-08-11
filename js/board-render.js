@@ -514,7 +514,9 @@ function animLoop() {
   }
 
   // [1.10.2] Pause overlay — drawn on top of everything
-  if (fabPaused) {
+  // [2.0-pause] ...except during a player pause, which puts its own DOM overlay up. Player pause
+  // routes through fabPauseGame(), so without this both would render at once.
+  if (fabPaused && !_pausedByPlayer) {
     ctx.fillStyle = 'rgba(0,0,0,0.45)';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
     ctx.fillStyle = '#0cf';

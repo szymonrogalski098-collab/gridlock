@@ -20,6 +20,10 @@ let tStartRound = 1;
 let tSpeedMult = 1.0;         // [1.10.1] pending value — applied at next startRound()
 let _appliedSpeedMult = 1.0; // [1.10.2-fix] committed value, only updates at round boundaries
 let fabPaused = false;        // [1.10.2]
+// [2.0-pause] player-facing pause (js/pause.js). Lives here, not in pause.js, because
+// js/sdk.js's visibilitychange handler reads it — a tab switch during page load would hit
+// the temporal dead zone if the binding were declared in a later-loading file.
+let _pausedByPlayer = false;
 let _phaseFn = null;          // [1.10.2] currently pending phase callback
 let _phaseFiresAt = 0;        // [1.10.2] absolute ms when phaseTimer fires
 let _phaseRemainingMs = 0;    // [1.10.2] stored on pause

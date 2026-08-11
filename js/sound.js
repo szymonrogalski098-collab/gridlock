@@ -10,6 +10,20 @@ function getAudio() {
   return audioCtx;
 }
 
+// [2.0-sdk] Mute everything for the duration of an ad. Every sound connects straight to
+// ac.destination — there is no master gain node — so suspending the whole context is the
+// one non-invasive way to silence them all.
+// Deliberately does NOT call getAudio(): that CONSTRUCTS a context when none exists, so
+// muting before the first sound ever played would create one purely to suspend it (and
+// browsers block construction before a user gesture anyway). No context = nothing to mute.
+function _cgMuteAudio(mute) {
+  if (!audioCtx) return;
+  try {
+    if (mute && audioCtx.state === 'running') audioCtx.suspend();
+    else if (!mute && audioCtx.state === 'suspended') audioCtx.resume();
+  } catch (e) {}
+}
+
 // [1.9.2] Dispatcher — all existing call sites unchanged
 function playSound(type) {
   if      (type==='dash')         playDash();

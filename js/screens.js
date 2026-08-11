@@ -57,6 +57,7 @@ function startModeGame(mode) { // [1.10]
 }
 
 function showMenu() {
+  cgGameplayStop(); // [2.0-sdk] no-op unless gameplay was actually running (also fires on cold boot)
   clearInterval(_modesCountdownInterval); // [1.10]
   gameMode = null; // [1.10]
   showScreen('screen-start');

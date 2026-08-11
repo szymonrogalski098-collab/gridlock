@@ -465,6 +465,9 @@ function _updateFloatBtns() {
 }
 // [1.10.1] FAB open/close — state tracked via _fabOpen boolean, independent of tSpeedMult [1.10.2]
 function _toggleFab() { // [1.10.2]
+  // [2.0-pause] The player pause owns the freeze while it's up. Without this, closing the FAB
+  // would call fabResumeGame() and un-freeze the game with the PAUSED overlay still showing.
+  if (_pausedByPlayer) return;
   const menu = document.getElementById('tester-fab-menu');
   if (!menu) return;
   _fabOpen = !_fabOpen;

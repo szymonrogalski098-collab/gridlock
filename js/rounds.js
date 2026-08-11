@@ -407,6 +407,7 @@ function die(reason) {
   _resetRoundMods(); // [2.0-s3]
   asteroids = []; clearTimeout(asteroidTimer); asteroidTimer = null; _resetBlackHole(); // [2.0-s2]
   alive=false; lastTime=(_virtMs()/1000).toFixed(1); // [1.10.2-fix]
+  cgGameplayStop(); // [2.0-sdk] below the sandbox/tutorial early-returns, so only a real death
   clearTimeout(phaseTimer);
   _resetTesterSettings(); // [1.10.2]
   playSound('die');

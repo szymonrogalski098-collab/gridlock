@@ -2,6 +2,7 @@
 // [MODULE] Split out of cube_master.js - lines moved verbatim, no logic changed.
 // [MODULE] Load order matters: see the script tags at the bottom of index.html.
 function showWorldChoice() { // [2.0-s1] game stays live; player picks Continue or Enter the Void
+  cgGameplayStop(); // [2.0-sdk] alive stays true, but the player is choosing, not playing
   showScreen('screen-world-choice');
 }
 

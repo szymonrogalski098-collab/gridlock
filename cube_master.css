@@ -575,6 +575,28 @@ body.world2 #board-wrap.mod-flash #board { box-shadow:0 0 30px rgba(155,89,182,.
 #death-title  { font-size:30px; color:#ff4444; letter-spacing:3px;
   text-shadow:0 0 20px #ff2200; animation:flicker .4s infinite alternate; }
 #death-stats  { font-size:14px; color:#aaccee; text-align:center; line-height:2; }
+
+/* [2.0-pause] PAUSE OVERLAY — same skeleton as #death-overlay so behaviour matches, but
+   deliberately calmer: lighter scrim and a steady cyan title instead of the flickering red,
+   so a paused game can never be mistaken for a lost one. z-index 40 sits above #app (10) and
+   #death-overlay (30) but below #shop / #void-shop (60). */
+#pause-overlay { position:fixed; inset:0; width:100vw; height:100dvh;
+  background:rgba(0,0,0,.75); z-index:40;
+  display:flex; flex-direction:column; align-items:center; justify-content:center; gap:14px;
+  visibility:hidden; pointer-events:none;
+  transition:opacity .22s ease, transform .22s ease; opacity:0; transform:translateY(18px); }
+#pause-overlay.show { visibility:visible; pointer-events:auto; opacity:1; transform:translateY(0); }
+#pause-title { font-size:30px; color:#0cf; letter-spacing:3px; text-shadow:0 0 20px rgba(0,180,255,.6); }
+body.world2 #pause-title { color:#cc88ff; text-shadow:0 0 20px rgba(155,89,182,.6); }
+
+/* [2.0-pause] HUD pause button — a <button> inside a flex HUD, so the UA styling has to be
+   reset. Always visible (Escape alone is undiscoverable); .hud-ico supplies the icon styling. */
+#hud-pause-btn { background:none; border:none; padding:0 2px; margin:0; cursor:pointer;
+  color:#88ccff; line-height:0; -webkit-tap-highlight-color:transparent;
+  transition:color .15s, transform .15s; }
+#hud-pause-btn:hover  { color:#0ff; transform:scale(1.15); }
+#hud-pause-btn:active { transform:scale(.92); }
+body.world2 #hud-pause-btn { color:#cc88ff; }
 @keyframes flicker { from{opacity:1} to{opacity:.55} }
 @keyframes new-best-pulse { /* [1.9.3] */
   0%,100% { text-shadow:0 0 8px #0ff, 0 0 18px #0ff; opacity:1; }

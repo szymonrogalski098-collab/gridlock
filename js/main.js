@@ -171,6 +171,8 @@ function startGame(hard = false, fromTester = false, custom = false, tutorial = 
   buildBoard(); render();
   if (tutorialActive) _tutorialStart(); else if (customGame) _customStart(); else startRound(); // [2.0-s3.2][2.0-s4h] tutorial vs sandbox vs normal
   if (!tutorialActive) mTrackGameStart(); // [2.0-s4h] tutorial isn't a tracked game
+  if (!tutorialActive) cgGameplayStart(); // [2.0-sdk] tutorial is onboarding, not gameplay
+  if (_hudPauseBtn) _hudPauseBtn.style.display = tutorialActive ? 'none' : ''; // [2.0-pause] no dead button mid-tutorial
   if (testerActive && tFps) { fpsFrames=0; fpsLast=performance.now(); requestAnimationFrame(fpsLoop); }
 }
 
@@ -217,6 +219,7 @@ document.getElementById('btn-world-switch').addEventListener('click', () => {
 });
 document.getElementById('wc-world1').addEventListener('click', () => { // Continue in World 1
   playUISound('tab'); showScreen('app'); startRound(); // round 100 → 101, theme unchanged
+  cgGameplayStart(); // [2.0-sdk] the only resume path that never goes through startGame()
 });
 document.getElementById('wc-world2').addEventListener('click', () => { // Enter the Void
   playUISound('tab');
@@ -257,8 +260,18 @@ document.getElementById('shop-tab-bl').addEventListener('click',   ()=>{ shopAct
 window.addEventListener('resize', ()=>{ if(alive&&appEl.style.visibility!=='hidden'){ invalidateSkinCache(); buildBoard(); render(); } });
 // inicjalizacja
 applyWorldTheme(); // [2.0-s1] reflect remembered world preference on load
-if (!localStorage.getItem('cm_tutorial_done')) {
-  startTutorial(); // [1.10.2] auto-start tutorial on first launch
-} else {
-  showMenu();
+// [2.0-sdk] try/finally so loadingStop can't be skipped. Verified in the browser: on a first
+// launch startTutorial() can throw (pre-existing roundRect bug), which aborted the rest of this
+// tail and left CrazyGames believing the game never finished loading. Whatever the branch does,
+// the game is interactive by the time we get here.
+try {
+  if (!localStorage.getItem('cm_tutorial_done')) {
+    startTutorial(); // [1.10.2] auto-start tutorial on first launch
+  } else {
+    showMenu();
+  }
+} finally {
+  // Runs while SDK init() is still awaiting, so this only records the request; sdk.js flushes it
+  // once the SDK is ready. A direct _cgSdk.game.loadingStop() here would silently never fire.
+  cgLoadingStop();
 }
